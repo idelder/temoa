@@ -353,10 +353,10 @@ class TemoaModel(AbstractModel):
         )
         M.MaxCapacity = Param(M.MaxCapacityConstraint_rpt)
 
-        M.FixedCapacityConstraint_rpt = Set(
-            within=M.RegionalIndices * M.time_optimize * M.tech_with_capacity
+        M.FixedCapacityConstraint_rtv = Set(
+            within=M.RegionalIndices * M.tech_with_capacity * M.time_optimize
         )
-        M.FixedCapacity = Param(M.FixedCapacityConstraint_rpt)
+        M.FixedCapacity = Param(M.FixedCapacityConstraint_rtv)
 
         M.MinNewCapacityConstraint_rpt = Set(
             within=M.RegionalIndices * M.time_optimize * M.tech_with_capacity
@@ -736,7 +736,7 @@ class TemoaModel(AbstractModel):
         )
 
         M.FixedCapacityConstraint = Constraint(
-            M.FixedCapacityConstraint_rpt, rule=FixedCapacity_Constraint
+            M.FixedCapacityConstraint_rtv, rule=FixedCapacity_Constraint
         )
 
         M.MaxNewCapacityConstraint = Constraint(

@@ -826,15 +826,15 @@ class HybridLoader:
         if self.table_exists('FixedCapacity'):
             if mi:
                 raw = cur.execute(
-                    'SELECT region, period, tech, max_cap FROM main.FixedCapacity '
-                    'WHERE period >= ? AND period <= ?',
+                    'SELECT region, tech, vintage, capacity FROM main.FixedCapacity '
+                    'WHERE vintage >= ? AND vintage <= ?',
                     (mi.base_year, mi.last_demand_year),
                 ).fetchall()
             else:
                 raw = cur.execute(
-                    'SELECT region, period, tech, max_cap FROM main.FixedCapacity '
+                    'SELECT region, tech, vintage, capacity FROM main.FixedCapacity '
                 ).fetchall()
-            load_element(M.FixedCapacity, raw, self.viable_rt, (0, 2))
+            load_element(M.FixedCapacity, raw, self.viable_rtv, (0, 1, 2))
 
         # MinNewCap
         if self.table_exists('MinNewCapacity'):
@@ -1305,7 +1305,7 @@ class HybridLoader:
             M.MaxAnnualCapacityFactor.name: M.MaxAnnualCapacityFactorConstraint_rpto.name,
             M.MaxAnnualCapacityFactorVintage.name: M.MaxAnnualCapacityFactorVintageConstraint_rptvo.name,
             M.MaxCapacity.name: M.MaxCapacityConstraint_rpt.name,
-            M.FixedCapacity.name: M.FixedCapacityConstraint_rpt.name,
+            M.FixedCapacity.name: M.FixedCapacityConstraint_rtv.name,
             M.MaxCapacityGroup.name: M.MaxCapacityGroupConstraint_rpg.name,
             M.MaxCapacityShare.name: M.MaxCapacityShareConstraint_rptg.name,
             M.MaxNewCapacity.name: M.MaxNewCapacityConstraint_rpt.name,

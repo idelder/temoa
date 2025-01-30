@@ -249,7 +249,7 @@ def solve_instance(
             optimizer.options["Method"] = 2  # barrier
             optimizer.options["Crossover"] = 0  # non basic solution, ie no crossover
             optimizer.options["BarConvTol"] = 1.e-3
-            optimizer.options["FeasibilityTol"] = 1.e-4
+            optimizer.options["FeasibilityTol"] = 1.e-3
 
         elif solver_name == 'appsi_highs':
             pass
