@@ -2464,6 +2464,24 @@ def MaxCapacity_Constraint(M: 'TemoaModel', r, p, t):
     return expr
 
 
+def FixedCapacity_Constraint(M: 'TemoaModel', r, p, t):
+    r"""
+
+    The MaxCapacity constraint sets a limit on the maximum available capacity of a
+    given technology. Note that the indices for these constraints are region, period and
+    tech, not tech and vintage.
+
+    .. math::
+       :label: MaxCapacity
+
+       \textbf{CAPAVL}_{r, p, t} \le MAC_{r, p, t}
+
+       \forall \{r, p, t\} \in \Theta_{\text{MaxCapacity}}"""
+    fixed_cap = value(M.FixedCapacity[r, p, t])
+    expr = M.V_CapacityAvailableByPeriodAndTech[r, p, t] == fixed_cap
+    return expr
+
+
 def MaxResource_Constraint(M: 'TemoaModel', r, t):
     r"""
 
