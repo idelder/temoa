@@ -260,23 +260,23 @@ class TableWriter:
         scenario = self.config.scenario
         if iteration is not None:
             scenario = scenario + f'-{iteration}'
-        # Built Capacity
-        data = []
-        for r, t, v in M.V_NewCapacity:
-            if v in M.time_optimize:
-                val = value(M.V_NewCapacity[r, t, v])
-                s = self.tech_sectors.get(t)
-                if abs(val) < self.epsilon:
-                    continue
-                new_cap = (scenario, r, s, t, v, val)
-                data.append(new_cap)
-        qry = 'INSERT INTO OutputBuiltCapacity VALUES (?, ?, ?, ?, ?, ?)'
-        self.con.executemany(qry, data)
+        # # Built Capacity
+        # data = []
+        # for r, t, v in M.V_NewCapacity:
+        #     if v in M.time_optimize:
+        #         val = value(M.V_NewCapacity[r, t, v])
+        #         s = self.tech_sectors.get(t)
+        #         if abs(val) < self.epsilon:
+        #             continue
+        #         new_cap = (scenario, r, s, t, v, val)
+        #         data.append(new_cap)
+        # qry = 'INSERT INTO OutputBuiltCapacity VALUES (?, ?, ?, ?, ?, ?)'
+        # self.con.executemany(qry, data)
 
         # NetCapacity
         data = []
-        for r, p, t, v in M.V_Capacity:
-            val = value(M.V_Capacity[r, p, t, v])
+        for r, p, t, v in M.Capacity:
+            val = value(M.Capacity[r, p, t, v])
             if abs(val) < self.epsilon:
                 continue
             s = self.tech_sectors.get(t)
@@ -285,17 +285,17 @@ class TableWriter:
         qry = 'INSERT INTO OutputNetCapacity VALUES (?, ?, ?, ?, ?, ?, ?)'
         self.con.executemany(qry, data)
 
-        # Retired Capacity
-        data = []
-        for r, p, t, v in M.V_RetiredCapacity:
-            val = value(M.V_RetiredCapacity[r, p, t, v])
-            if abs(val) < self.epsilon:
-                continue
-            s = self.tech_sectors.get(t)
-            new_retired_cap = (scenario, r, s, p, t, v, val)
-            data.append(new_retired_cap)
-        qry = 'INSERT INTO OutputRetiredCapacity VALUES (?, ?, ?, ?, ?, ?, ?)'
-        self.con.executemany(qry, data)
+        # # Retired Capacity
+        # data = []
+        # for r, p, t, v in M.V_RetiredCapacity:
+        #     val = value(M.V_RetiredCapacity[r, p, t, v])
+        #     if abs(val) < self.epsilon:
+        #         continue
+        #     s = self.tech_sectors.get(t)
+        #     new_retired_cap = (scenario, r, s, p, t, v, val)
+        #     data.append(new_retired_cap)
+        # qry = 'INSERT INTO OutputRetiredCapacity VALUES (?, ?, ?, ?, ?, ?, ?)'
+        # self.con.executemany(qry, data)
 
         self.con.commit()
 
@@ -502,13 +502,13 @@ class TableWriter:
                 res[fi][FlowType.LOST] = (1 - value(M.Efficiency[ritvo(fi)])) * flow
 
 
-        # curtailment flows
-        for key in M.V_Curtailment:
-            fi = FI(*key)
-            val = value(M.V_Curtailment[fi])
-            if abs(val) < self.epsilon:
-                continue
-            res[fi][FlowType.CURTAIL] = val
+        # # curtailment flows
+        # for key in M.V_Curtailment:
+        #     fi = FI(*key)
+        #     val = value(M.V_Curtailment[fi])
+        #     if abs(val) < self.epsilon:
+        #         continue
+        #     res[fi][FlowType.CURTAIL] = val
 
         # flex techs.  This will subtract the flex from their output flow IOT make OUT the "net"
         for key in M.V_Flex:
@@ -548,49 +548,49 @@ class TableWriter:
 
         return res
 
-    @staticmethod
-    def loan_costs(
-        loan_rate,  # this is referred to as LoanRate in parameters
-        loan_life,
-        capacity,
-        invest_cost,
-        process_life,
-        p_0,
-        p_e,
-        global_discount_rate,
-        vintage,
-        **kwargs,
-    ) -> tuple[float, float]:
-        """
-        Calculate Loan costs by calling the loan annualize and loan cost functions in temoa_rules
-        :return: tuple of [model-view discounted cost, un-discounted annuity]
-        """
-        # dev note:  this is a passthrough function.  Sole intent is to use the EXACT formula the
-        #            model uses for these costs
-        loan_ar = temoa_rules.loan_annualization_rate(loan_rate=loan_rate, loan_life=loan_life)
-        model_ic = temoa_rules.loan_cost(
-            capacity,
-            invest_cost,
-            loan_annualize=loan_ar,
-            lifetime_loan_process=loan_life,
-            P_0=p_0,
-            P_e=p_e,
-            GDR=global_discount_rate,
-            vintage=vintage,
-        )
-        # Override the GDR to get the undiscounted value
-        global_discount_rate = 0
-        undiscounted_cost = temoa_rules.loan_cost(
-            capacity,
-            invest_cost,
-            loan_annualize=loan_ar,
-            lifetime_loan_process=loan_life,
-            P_0=p_0,
-            P_e=p_e,
-            GDR=global_discount_rate,
-            vintage=vintage,
-        )
-        return model_ic, undiscounted_cost
+    # @staticmethod
+    # def loan_costs(
+    #     loan_rate,  # this is referred to as LoanRate in parameters
+    #     loan_life,
+    #     capacity,
+    #     invest_cost,
+    #     process_life,
+    #     p_0,
+    #     p_e,
+    #     global_discount_rate,
+    #     vintage,
+    #     **kwargs,
+    # ) -> tuple[float, float]:
+    #     """
+    #     Calculate Loan costs by calling the loan annualize and loan cost functions in temoa_rules
+    #     :return: tuple of [model-view discounted cost, un-discounted annuity]
+    #     """
+    #     # dev note:  this is a passthrough function.  Sole intent is to use the EXACT formula the
+    #     #            model uses for these costs
+    #     loan_ar = temoa_rules.loan_annualization_rate(loan_rate=loan_rate, loan_life=loan_life)
+    #     model_ic = temoa_rules.loan_cost(
+    #         capacity,
+    #         invest_cost,
+    #         loan_annualize=loan_ar,
+    #         lifetime_loan_process=loan_life,
+    #         P_0=p_0,
+    #         P_e=p_e,
+    #         GDR=global_discount_rate,
+    #         vintage=vintage,
+    #     )
+    #     # Override the GDR to get the undiscounted value
+    #     global_discount_rate = 0
+    #     undiscounted_cost = temoa_rules.loan_cost(
+    #         capacity,
+    #         invest_cost,
+    #         loan_annualize=loan_ar,
+    #         lifetime_loan_process=loan_life,
+    #         P_0=p_0,
+    #         P_e=p_e,
+    #         GDR=global_discount_rate,
+    #         vintage=vintage,
+    #     )
+    #     return model_ic, undiscounted_cost
 
     def write_costs(self, M: TemoaModel, emission_entries=None, iteration=None):
         """
@@ -614,85 +614,85 @@ class TableWriter:
         # conveniences...
         GDR = value(M.GlobalDiscountRate)
         MPL = M.ModelProcessLife
-        LLN = M.LoanLifetimeProcess
+        # LLN = M.LoanLifetimeProcess
 
         exchange_costs = ExchangeTechCostLedger(M)
         entries = defaultdict(dict)
-        for r, t, v in M.CostInvest.sparse_iterkeys():  # Returns only non-zero values
-            # gather details...
-            cap = value(M.V_NewCapacity[r, t, v])
-            if abs(cap) < self.epsilon:
-                continue
-            loan_life = value(LLN[r, t, v])
-            loan_rate = value(M.LoanRate[r, t, v])
+        # for r, t, v in M.CostInvest.sparse_iterkeys():  # Returns only non-zero values
+        #     # gather details...
+        #     cap = value(M.V_NewCapacity[r, t, v])
+        #     if abs(cap) < self.epsilon:
+        #         continue
+        #     loan_life = value(LLN[r, t, v])
+        #     loan_rate = value(M.LoanRate[r, t, v])
 
-            model_loan_cost, undiscounted_cost = self.loan_costs(
-                loan_rate=loan_rate,
-                loan_life=loan_life,
-                capacity=cap,
-                invest_cost=value(M.CostInvest[r, t, v]),
-                process_life=value(M.LifetimeProcess[r, t, v]),
-                p_0=p_0,
-                p_e=p_e,
-                global_discount_rate=GDR,
-                vintage=v,
-            )
-            # screen for linked region...
-            if '-' in r:
-                exchange_costs.add_cost_record(
-                    r,
-                    period=v,
-                    tech=t,
-                    vintage=v,
-                    cost=model_loan_cost,
-                    cost_type=CostType.D_INVEST,
-                )
-                exchange_costs.add_cost_record(
-                    r,
-                    period=v,
-                    tech=t,
-                    vintage=v,
-                    cost=undiscounted_cost,
-                    cost_type=CostType.INVEST,
-                )
-            else:
-                # enter it into the entries table with period of cost = vintage (p=v)
-                entries[r, v, t, v].update(
-                    {CostType.D_INVEST: model_loan_cost, CostType.INVEST: undiscounted_cost}
-                )
+        #     model_loan_cost, undiscounted_cost = self.loan_costs(
+        #         loan_rate=loan_rate,
+        #         loan_life=loan_life,
+        #         capacity=cap,
+        #         invest_cost=value(M.CostInvest[r, t, v]),
+        #         process_life=value(M.LifetimeProcess[r, t, v]),
+        #         p_0=p_0,
+        #         p_e=p_e,
+        #         global_discount_rate=GDR,
+        #         vintage=v,
+        #     )
+        #     # screen for linked region...
+        #     if '-' in r:
+        #         exchange_costs.add_cost_record(
+        #             r,
+        #             period=v,
+        #             tech=t,
+        #             vintage=v,
+        #             cost=model_loan_cost,
+        #             cost_type=CostType.D_INVEST,
+        #         )
+        #         exchange_costs.add_cost_record(
+        #             r,
+        #             period=v,
+        #             tech=t,
+        #             vintage=v,
+        #             cost=undiscounted_cost,
+        #             cost_type=CostType.INVEST,
+        #         )
+        #     else:
+        #         # enter it into the entries table with period of cost = vintage (p=v)
+        #         entries[r, v, t, v].update(
+        #             {CostType.D_INVEST: model_loan_cost, CostType.INVEST: undiscounted_cost}
+        #         )
 
-        for r, p, t, v in M.CostFixed.sparse_iterkeys():
-            cap = value(M.V_Capacity[r, p, t, v])
-            if abs(cap) < self.epsilon:
-                continue
+        # for r, p, t, v in M.CostFixed.sparse_iterkeys():
+        #     cap = value(M.V_Capacity[r, p, t, v])
+        #     if abs(cap) < self.epsilon:
+        #         continue
 
-            fixed_cost = value(M.CostFixed[r, p, t, v])
-            undiscounted_fixed_cost = cap * fixed_cost * value(MPL[r, p, t, v])
+        #     fixed_cost = value(M.CostFixed[r, p, t, v])
+        #     undiscounted_fixed_cost = cap * fixed_cost * value(MPL[r, p, t, v])
 
-            model_fixed_cost = temoa_rules.fixed_or_variable_cost(
-                cap, fixed_cost, value(MPL[r, p, t, v]), GDR=GDR, P_0=p_0, p=p
-            )
-            if '-' in r:
-                exchange_costs.add_cost_record(
-                    r,
-                    period=p,
-                    tech=t,
-                    vintage=v,
-                    cost=model_fixed_cost,
-                    cost_type=CostType.D_FIXED,
-                )
-                exchange_costs.add_cost_record(
-                    r,
-                    period=p,
-                    tech=t,
-                    vintage=v,
-                    cost=undiscounted_fixed_cost,
-                    cost_type=CostType.FIXED,
-                )
-            else:
-                entries[r, p, t, v].update(
-                    {CostType.D_FIXED: model_fixed_cost, CostType.FIXED: undiscounted_fixed_cost}
-                )
+        #     model_fixed_cost = temoa_rules.fixed_or_variable_cost(
+        #         cap, fixed_cost, value(MPL[r, p, t, v]), GDR=GDR, P_0=p_0, p=p
+        #     )
+        #     if '-' in r:
+        #         exchange_costs.add_cost_record(
+        #             r,
+        #             period=p,
+        #             tech=t,
+        #             vintage=v,
+        #             cost=model_fixed_cost,
+        #             cost_type=CostType.D_FIXED,
+        #         )
+        #         exchange_costs.add_cost_record(
+        #             r,
+        #             period=p,
+        #             tech=t,
+        #             vintage=v,
+        #             cost=undiscounted_fixed_cost,
+        #             cost_type=CostType.FIXED,
+        #         )
+        #     else:
+        #         entries[r, p, t, v].update(
+        #             {CostType.D_FIXED: model_fixed_cost, CostType.FIXED: undiscounted_fixed_cost}
+        #         )
 
         for r, p, t, v in M.CostVariable.sparse_iterkeys():
             if t not in M.tech_annual:
@@ -715,7 +715,7 @@ class TableWriter:
             var_cost = value(M.CostVariable[r, p, t, v])
             undiscounted_var_cost = activity * var_cost * value(MPL[r, p, t, v])
 
-            model_var_cost = temoa_rules.fixed_or_variable_cost(
+            model_var_cost = temoa_rules.variable_cost(
                 activity, var_cost, value(MPL[r, p, t, v]), GDR=GDR, P_0=p_0, p=p
             )
             if '-' in r:
@@ -804,7 +804,7 @@ class TableWriter:
             undiscounted_emiss_cost = (
                 flows[ei] * M.CostEmission[ei.r, ei.p, ei.e] * MPL[ei.r, ei.p, ei.t, ei.v]
             )
-            discounted_emiss_cost = temoa_rules.fixed_or_variable_cost(
+            discounted_emiss_cost = temoa_rules.variable_cost(
                 cap_or_flow=flows[ei],
                 cost_factor=M.CostEmission[ei.r, ei.p, ei.e],
                 process_lifetime=MPL[ei.r, ei.p, ei.t, ei.v],

@@ -600,9 +600,9 @@ class HybridLoader:
         ).fetchall()
         load_element(M.LifetimeProcess, raw, self.viable_rtv, val_loc=(0, 1, 2))
 
-        # LoanLifetimeTech
-        raw = cur.execute('SELECT region, tech, lifetime FROM main.LoanLifetimeTech').fetchall()
-        load_element(M.LoanLifetimeTech, raw, self.viable_rt, (0, 1))
+        # # LoanLifetimeTech
+        # raw = cur.execute('SELECT region, tech, lifetime FROM main.LoanLifetimeTech').fetchall()
+        # load_element(M.LoanLifetimeTech, raw, self.viable_rt, (0, 1))
 
         # TechInputSplit
         if mi:
@@ -711,30 +711,30 @@ class HybridLoader:
             load_element(M.RenewablePortfolioStandard, raw)
 
 
-        # CostFixed
-        if mi:
-            raw = cur.execute(
-                'SELECT region, period, tech, vintage, cost FROM main.CostFixed '
-                'WHERE period >= ? AND period <= ?',
-                (mi.base_year, mi.last_demand_year),
-            ).fetchall()
-        else:
-            raw = cur.execute(
-                'SELECT region, period, tech, vintage, cost FROM main.CostFixed '
-            ).fetchall()
-        load_element(M.CostFixed, raw, self.viable_rtv, val_loc=(0, 2, 3))
+        # # CostFixed
+        # if mi:
+        #     raw = cur.execute(
+        #         'SELECT region, period, tech, vintage, cost FROM main.CostFixed '
+        #         'WHERE period >= ? AND period <= ?',
+        #         (mi.base_year, mi.last_demand_year),
+        #     ).fetchall()
+        # else:
+        #     raw = cur.execute(
+        #         'SELECT region, period, tech, vintage, cost FROM main.CostFixed '
+        #     ).fetchall()
+        # load_element(M.CostFixed, raw, self.viable_rtv, val_loc=(0, 2, 3))
 
-        # CostInvest
-        # exclude "existing" vintages by screening for base year and beyond.
-        # the "viable_rtv" will filter anything beyond view
-        if mi:
-            raw = cur.execute(
-                'SELECT region, tech, vintage, cost FROM main.CostInvest ' 'WHERE vintage >= ?',
-                (mi.base_year,),
-            ).fetchall()
-        else:
-            raw = cur.execute('SELECT region, tech, vintage, cost FROM main.CostInvest ').fetchall()
-        load_element(M.CostInvest, raw, self.viable_rtv, (0, 1, 2))
+        # # CostInvest
+        # # exclude "existing" vintages by screening for base year and beyond.
+        # # the "viable_rtv" will filter anything beyond view
+        # if mi:
+        #     raw = cur.execute(
+        #         'SELECT region, tech, vintage, cost FROM main.CostInvest ' 'WHERE vintage >= ?',
+        #         (mi.base_year,),
+        #     ).fetchall()
+        # else:
+        #     raw = cur.execute('SELECT region, tech, vintage, cost FROM main.CostInvest ').fetchall()
+        # load_element(M.CostInvest, raw, self.viable_rtv, (0, 1, 2))
 
         # CostVariable
         if mi:
@@ -776,177 +776,205 @@ class HybridLoader:
                 ).fetchall()
                 load_element(M.CostEmission, raw)
 
-        # DefaultLoanRate
-        raw = cur.execute(
-            "SELECT value FROM main.MetaDataReal WHERE element = 'default_loan_rate'"
-        ).fetchall()
-        # do this separately as it is non-indexed, so we need to make a mapping with None
-        data[M.DefaultLoanRate.name] = {None: raw[0][0]}
+        # # DefaultLoanRate
+        # raw = cur.execute(
+        #     "SELECT value FROM main.MetaDataReal WHERE element = 'default_loan_rate'"
+        # ).fetchall()
+        # # do this separately as it is non-indexed, so we need to make a mapping with None
+        # data[M.DefaultLoanRate.name] = {None: raw[0][0]}
 
-        # LoanRate
-        if mi:
-            raw = cur.execute(
-                'SELECT region, tech, vintage, rate FROM main.LoanRate ' 'WHERE vintage >= ?',
-                (mi.base_year,),
-            ).fetchall()
-        else:
-            raw = cur.execute('SELECT region, tech, vintage, rate FROM main.LoanRate ').fetchall()
+        # # LoanRate
+        # if mi:
+        #     raw = cur.execute(
+        #         'SELECT region, tech, vintage, rate FROM main.LoanRate ' 'WHERE vintage >= ?',
+        #         (mi.base_year,),
+        #     ).fetchall()
+        # else:
+        #     raw = cur.execute('SELECT region, tech, vintage, rate FROM main.LoanRate ').fetchall()
 
-        load_element(M.LoanRate, raw, self.viable_rtv, (0, 1, 2))
+        # load_element(M.LoanRate, raw, self.viable_rtv, (0, 1, 2))
 
-        # MinCapacity
-        if self.table_exists('MinCapacity'):
+        # # MinCapacity
+        # if self.table_exists('MinCapacity'):
+        #     if mi:
+        #         raw = cur.execute(
+        #             'SELECT region, period, tech, min_cap FROM main.MinCapacity '
+        #             'WHERE period >= ? AND period <= ?',
+        #             (mi.base_year, mi.last_demand_year),
+        #         ).fetchall()
+        #     else:
+        #         raw = cur.execute(
+        #             'SELECT region, period, tech, min_cap FROM main.MinCapacity '
+        #         ).fetchall()
+        #     load_element(M.MinCapacity, raw, self.viable_rt, (0, 2))
+
+        # # MaxCapacity
+        # if self.table_exists('MaxCapacity'):
+        #     if mi:
+        #         raw = cur.execute(
+        #             'SELECT region, period, tech, max_cap FROM main.MaxCapacity '
+        #             'WHERE period >= ? AND period <= ?',
+        #             (mi.base_year, mi.last_demand_year),
+        #         ).fetchall()
+        #     else:
+        #         raw = cur.execute(
+        #             'SELECT region, period, tech, max_cap FROM main.MaxCapacity '
+        #         ).fetchall()
+        #     load_element(M.MaxCapacity, raw, self.viable_rt, (0, 2))
+
+        # # FixedCapacity
+        # if self.table_exists('FixedCapacity'):
+        #     if mi:
+        #         raw = cur.execute(
+        #             'SELECT region, tech, vintage, capacity FROM main.FixedCapacity '
+        #             'WHERE vintage >= ? AND vintage <= ?',
+        #             (mi.base_year, mi.last_demand_year),
+        #         ).fetchall()
+        #     else:
+        #         raw = cur.execute(
+        #             'SELECT region, tech, vintage, capacity FROM main.FixedCapacity '
+        #         ).fetchall()
+        #     load_element(M.FixedCapacity, raw, self.viable_rtv, (0, 1, 2))
+
+        # NewCapacity
+        if self.table_exists('NewCapacity'):
             if mi:
                 raw = cur.execute(
-                    'SELECT region, period, tech, min_cap FROM main.MinCapacity '
-                    'WHERE period >= ? AND period <= ?',
-                    (mi.base_year, mi.last_demand_year),
-                ).fetchall()
-            else:
-                raw = cur.execute(
-                    'SELECT region, period, tech, min_cap FROM main.MinCapacity '
-                ).fetchall()
-            load_element(M.MinCapacity, raw, self.viable_rt, (0, 2))
-
-        # MaxCapacity
-        if self.table_exists('MaxCapacity'):
-            if mi:
-                raw = cur.execute(
-                    'SELECT region, period, tech, max_cap FROM main.MaxCapacity '
-                    'WHERE period >= ? AND period <= ?',
-                    (mi.base_year, mi.last_demand_year),
-                ).fetchall()
-            else:
-                raw = cur.execute(
-                    'SELECT region, period, tech, max_cap FROM main.MaxCapacity '
-                ).fetchall()
-            load_element(M.MaxCapacity, raw, self.viable_rt, (0, 2))
-
-        # FixedCapacity
-        if self.table_exists('FixedCapacity'):
-            if mi:
-                raw = cur.execute(
-                    'SELECT region, tech, vintage, capacity FROM main.FixedCapacity '
+                    'SELECT region, tech, vintage, capacity FROM main.NewCapacity '
                     'WHERE vintage >= ? AND vintage <= ?',
                     (mi.base_year, mi.last_demand_year),
                 ).fetchall()
             else:
                 raw = cur.execute(
-                    'SELECT region, tech, vintage, capacity FROM main.FixedCapacity '
+                    'SELECT region, tech, vintage, capacity FROM main.NewCapacity '
                 ).fetchall()
-            load_element(M.FixedCapacity, raw, self.viable_rtv, (0, 1, 2))
+            load_element(M.NewCapacity, raw, self.viable_rtv, (0, 1, 2))
 
-        # MinNewCap
-        if self.table_exists('MinNewCapacity'):
+        # RetiredCapacity
+        if self.table_exists('RetiredCapacity'):
             if mi:
                 raw = cur.execute(
-                    'SELECT region, period, tech, min_cap FROM main.MinNewCapacity '
+                    'SELECT region, period, tech, vintage, capacity FROM main.RetiredCapacity '
                     'WHERE period >= ? AND period <= ?',
                     (mi.base_year, mi.last_demand_year),
                 ).fetchall()
             else:
                 raw = cur.execute(
-                    'SELECT region, period, tech, min_cap FROM main.MinNewCapacity '
+                    'SELECT region, period, tech, vintage, capacity FROM main.RetiredCapacity '
                 ).fetchall()
-            load_element(M.MinNewCapacity, raw, self.viable_rt, (0, 2))
+            load_element(M.RetiredCapacity, raw, self.viable_rtv, (0, 2, 3))
 
-        # MaxNewCap
-        if self.table_exists('MaxNewCapacity'):
-            if mi:
-                raw = cur.execute(
-                    'SELECT region, period, tech, max_cap FROM main.MaxNewCapacity '
-                    'WHERE period >= ? AND period <= ?',
-                    (mi.base_year, mi.last_demand_year),
-                ).fetchall()
-            else:
-                raw = cur.execute(
-                    'SELECT region, period, tech, max_cap FROM main.MaxNewCapacity '
-                ).fetchall()
-            load_element(M.MaxNewCapacity, raw, self.viable_rt, (0, 2))
+        # # MinNewCap
+        # if self.table_exists('MinNewCapacity'):
+        #     if mi:
+        #         raw = cur.execute(
+        #             'SELECT region, period, tech, min_cap FROM main.MinNewCapacity '
+        #             'WHERE period >= ? AND period <= ?',
+        #             (mi.base_year, mi.last_demand_year),
+        #         ).fetchall()
+        #     else:
+        #         raw = cur.execute(
+        #             'SELECT region, period, tech, min_cap FROM main.MinNewCapacity '
+        #         ).fetchall()
+        #     load_element(M.MinNewCapacity, raw, self.viable_rt, (0, 2))
 
-        # MaxCapacityGroup
-        if self.table_exists('MaxCapacityGroup'):
-            if mi:
-                raw = cur.execute(
-                    'SELECT region, period, group_name, max_cap FROM main.MaxCapacityGroup '
-                    ' WHERE period >= ? AND period <= ?',
-                    (mi.base_year, mi.last_demand_year),
-                ).fetchall()
-            else:
-                raw = cur.execute(
-                    'SELECT region, period, group_name, max_cap FROM main.MaxCapacityGroup '
-                ).fetchall()
-            load_element(M.MaxCapacityGroup, raw)
+        # # MaxNewCap
+        # if self.table_exists('MaxNewCapacity'):
+        #     if mi:
+        #         raw = cur.execute(
+        #             'SELECT region, period, tech, max_cap FROM main.MaxNewCapacity '
+        #             'WHERE period >= ? AND period <= ?',
+        #             (mi.base_year, mi.last_demand_year),
+        #         ).fetchall()
+        #     else:
+        #         raw = cur.execute(
+        #             'SELECT region, period, tech, max_cap FROM main.MaxNewCapacity '
+        #         ).fetchall()
+        #     load_element(M.MaxNewCapacity, raw, self.viable_rt, (0, 2))
 
-        # MinCapacityGroup
-        if self.table_exists('MinCapacityGroup'):
-            if mi:
-                raw = cur.execute(
-                    'SELECT region, period, group_name, min_cap FROM main.MinCapacityGroup '
-                    ' WHERE period >= ? AND period <= ?',
-                    (mi.base_year, mi.last_demand_year),
-                ).fetchall()
-            else:
-                raw = cur.execute(
-                    'SELECT region, period, group_name, min_cap FROM main.MinCapacityGroup '
-                ).fetchall()
-            load_element(M.MinCapacityGroup, raw)
+        # # MaxCapacityGroup
+        # if self.table_exists('MaxCapacityGroup'):
+        #     if mi:
+        #         raw = cur.execute(
+        #             'SELECT region, period, group_name, max_cap FROM main.MaxCapacityGroup '
+        #             ' WHERE period >= ? AND period <= ?',
+        #             (mi.base_year, mi.last_demand_year),
+        #         ).fetchall()
+        #     else:
+        #         raw = cur.execute(
+        #             'SELECT region, period, group_name, max_cap FROM main.MaxCapacityGroup '
+        #         ).fetchall()
+        #     load_element(M.MaxCapacityGroup, raw)
 
-        # MinNewCapacityGroup
-        if self.table_exists('MinNewCapacityGroup'):
-            if mi:
-                raw = cur.execute(
-                    'SELECT region, period, group_name, min_new_cap FROM main.MinNewCapacityGroup '
-                    ' WHERE period >= ? AND period <= ?',
-                    (mi.base_year, mi.last_demand_year),
-                ).fetchall()
-            else:
-                raw = cur.execute(
-                    'SELECT region, period, group_name, min_new_cap FROM main.MinNewCapacityGroup '
-                ).fetchall()
-            load_element(M.MinNewCapacityGroup, raw)
+        # # MinCapacityGroup
+        # if self.table_exists('MinCapacityGroup'):
+        #     if mi:
+        #         raw = cur.execute(
+        #             'SELECT region, period, group_name, min_cap FROM main.MinCapacityGroup '
+        #             ' WHERE period >= ? AND period <= ?',
+        #             (mi.base_year, mi.last_demand_year),
+        #         ).fetchall()
+        #     else:
+        #         raw = cur.execute(
+        #             'SELECT region, period, group_name, min_cap FROM main.MinCapacityGroup '
+        #         ).fetchall()
+        #     load_element(M.MinCapacityGroup, raw)
 
-        # MaxNewCapacityGroup
-        if self.table_exists('MaxNewCapacityGroup'):
-            if mi:
-                raw = cur.execute(
-                    'SELECT region, period, group_name, max_new_cap FROM main.MaxNewCapacityGroup '
-                    ' WHERE period >= ? AND period <= ?',
-                    (mi.base_year, mi.last_demand_year),
-                ).fetchall()
-            else:
-                raw = cur.execute(
-                    'SELECT region, period, group_name, max_new_cap FROM main.MaxNewCapacityGroup '
-                ).fetchall()
-            load_element(M.MaxNewCapacityGroup, raw)
+        # # MinNewCapacityGroup
+        # if self.table_exists('MinNewCapacityGroup'):
+        #     if mi:
+        #         raw = cur.execute(
+        #             'SELECT region, period, group_name, min_new_cap FROM main.MinNewCapacityGroup '
+        #             ' WHERE period >= ? AND period <= ?',
+        #             (mi.base_year, mi.last_demand_year),
+        #         ).fetchall()
+        #     else:
+        #         raw = cur.execute(
+        #             'SELECT region, period, group_name, min_new_cap FROM main.MinNewCapacityGroup '
+        #         ).fetchall()
+        #     load_element(M.MinNewCapacityGroup, raw)
 
-        # MinCapacityShare
-        if self.table_exists('MinCapacityShare'):
-            raw = cur.execute(
-                'SELECT region, period, tech, group_name, min_proportion FROM main.MinCapacityShare'
-            ).fetchall()
-            load_element(M.MinCapacityShare, raw, self.viable_rt, (0, 2))
+        # # MaxNewCapacityGroup
+        # if self.table_exists('MaxNewCapacityGroup'):
+        #     if mi:
+        #         raw = cur.execute(
+        #             'SELECT region, period, group_name, max_new_cap FROM main.MaxNewCapacityGroup '
+        #             ' WHERE period >= ? AND period <= ?',
+        #             (mi.base_year, mi.last_demand_year),
+        #         ).fetchall()
+        #     else:
+        #         raw = cur.execute(
+        #             'SELECT region, period, group_name, max_new_cap FROM main.MaxNewCapacityGroup '
+        #         ).fetchall()
+        #     load_element(M.MaxNewCapacityGroup, raw)
 
-        # MaxCapacityShare
-        if self.table_exists('MaxCapacityShare'):
-            raw = cur.execute(
-                'SELECT region, period, tech, group_name, max_proportion FROM main.MaxCapacityShare'
-            ).fetchall()
-            load_element(M.MaxCapacityShare, raw, self.viable_rt, (0, 2))
+        # # MinCapacityShare
+        # if self.table_exists('MinCapacityShare'):
+        #     raw = cur.execute(
+        #         'SELECT region, period, tech, group_name, min_proportion FROM main.MinCapacityShare'
+        #     ).fetchall()
+        #     load_element(M.MinCapacityShare, raw, self.viable_rt, (0, 2))
 
-        # MinNewCapacityShare
-        if self.table_exists('MinNewCapacityShare'):
-            raw = cur.execute(
-                'SELECT region, period, tech, group_name, max_proportion FROM main.MinNewCapacityShare'
-            ).fetchall()
-            load_element(M.MinCapacityShare, raw, self.viable_rt, (0, 2))
+        # # MaxCapacityShare
+        # if self.table_exists('MaxCapacityShare'):
+        #     raw = cur.execute(
+        #         'SELECT region, period, tech, group_name, max_proportion FROM main.MaxCapacityShare'
+        #     ).fetchall()
+        #     load_element(M.MaxCapacityShare, raw, self.viable_rt, (0, 2))
 
-        # MaxNewCapacityShare
-        if self.table_exists('MaxNewCapacityShare'):
-            raw = cur.execute(
-                'SELECT region, period, tech, group_name, max_proportion FROM main.MaxNewCapacityShare'
-            ).fetchall()
-            load_element(M.MaxCapacityShare, raw, self.viable_rt, (0, 2))
+        # # MinNewCapacityShare
+        # if self.table_exists('MinNewCapacityShare'):
+        #     raw = cur.execute(
+        #         'SELECT region, period, tech, group_name, max_proportion FROM main.MinNewCapacityShare'
+        #     ).fetchall()
+        #     load_element(M.MinCapacityShare, raw, self.viable_rt, (0, 2))
+
+        # # MaxNewCapacityShare
+        # if self.table_exists('MaxNewCapacityShare'):
+        #     raw = cur.execute(
+        #         'SELECT region, period, tech, group_name, max_proportion FROM main.MaxNewCapacityShare'
+        #     ).fetchall()
+        #     load_element(M.MaxCapacityShare, raw, self.viable_rt, (0, 2))
 
         # MinActivityGroup
         if self.table_exists('MinActivityGroup'):
@@ -1149,15 +1177,15 @@ class HybridLoader:
                 ).fetchall()
             load_element(M.MaxAnnualCapacityFactorVintage, raw, self.viable_rt, (0, 2))
 
-        # GrowthRateMax
-        if self.table_exists('GrowthRateMax'):
-            raw = cur.execute('SELECT region, tech, rate FROM main.GrowthRateMax').fetchall()
-            load_element(M.GrowthRateMax, raw, self.viable_rt, (0, 1))
+        # # GrowthRateMax
+        # if self.table_exists('GrowthRateMax'):
+        #     raw = cur.execute('SELECT region, tech, rate FROM main.GrowthRateMax').fetchall()
+        #     load_element(M.GrowthRateMax, raw, self.viable_rt, (0, 1))
 
-        # GrowthRateSeed
-        if self.table_exists('GrowthRateSeed'):
-            raw = cur.execute('SELECT region, tech, seed FROM main.GrowthRateSeed').fetchall()
-            load_element(M.GrowthRateSeed, raw, self.viable_rt, (0, 1))
+        # # GrowthRateSeed
+        # if self.table_exists('GrowthRateSeed'):
+        #     raw = cur.execute('SELECT region, tech, seed FROM main.GrowthRateSeed').fetchall()
+        #     load_element(M.GrowthRateSeed, raw, self.viable_rt, (0, 1))
 
         # EmissionLimit
         if self.table_exists('EmissionLimit'):
@@ -1227,19 +1255,19 @@ class HybridLoader:
             raw = cur.execute('SELECT region, tech, rate FROM main.RampDown').fetchall()
             load_element(M.RampDown, raw, self.viable_rt, (0, 1))
 
-        # CapacityCredit
-        if self.table_exists('CapacityCredit'):
-            if mi:
-                raw = cur.execute(
-                    'SELECT region, period, tech, vintage, credit FROM main.CapacityCredit '
-                    'WHERE period >= ? AND period <= ?',
-                    (mi.base_year, mi.last_demand_year),
-                ).fetchall()
-            else:
-                raw = cur.execute(
-                    'SELECT region, period, tech, vintage, credit FROM main.CapacityCredit '
-                ).fetchall()
-            load_element(M.CapacityCredit, raw, self.viable_rtv, (0, 2, 3))
+        # # CapacityCredit
+        # if self.table_exists('CapacityCredit'):
+        #     if mi:
+        #         raw = cur.execute(
+        #             'SELECT region, period, tech, vintage, credit FROM main.CapacityCredit '
+        #             'WHERE period >= ? AND period <= ?',
+        #             (mi.base_year, mi.last_demand_year),
+        #         ).fetchall()
+        #     else:
+        #         raw = cur.execute(
+        #             'SELECT region, period, tech, vintage, credit FROM main.CapacityCredit '
+        #         ).fetchall()
+        #     load_element(M.CapacityCredit, raw, self.viable_rtv, (0, 2, 3))
 
         # PlanningReserveMargin
         if self.table_exists('PlanningReserveMargin'):
@@ -1297,31 +1325,31 @@ class HybridLoader:
 
         M: TemoaModel = TemoaModel()  # for typing
         param_idx_sets = {
-            M.CostInvest.name: M.CostInvest_rtv.name,
+            # M.CostInvest.name: M.CostInvest_rtv.name,
             M.EmissionLimit.name: M.EmissionLimitConstraint_rpe.name,
             M.MaxActivity.name: M.MaxActivityConstraint_rpt.name,
             M.MaxActivityGroup.name: M.MaxActivityGroup_rpg.name,
             M.MaxActivityShare.name: M.MaxActivityShareConstraint_rptg.name,
             M.MaxAnnualCapacityFactor.name: M.MaxAnnualCapacityFactorConstraint_rpto.name,
             M.MaxAnnualCapacityFactorVintage.name: M.MaxAnnualCapacityFactorVintageConstraint_rptvo.name,
-            M.MaxCapacity.name: M.MaxCapacityConstraint_rpt.name,
-            M.FixedCapacity.name: M.FixedCapacityConstraint_rtv.name,
-            M.MaxCapacityGroup.name: M.MaxCapacityGroupConstraint_rpg.name,
-            M.MaxCapacityShare.name: M.MaxCapacityShareConstraint_rptg.name,
-            M.MaxNewCapacity.name: M.MaxNewCapacityConstraint_rpt.name,
-            M.MaxNewCapacityGroup.name: M.MaxNewCapacityGroupConstraint_rpg.name,
-            M.MaxNewCapacityShare.name: M.MaxNewCapacityShareConstraint_rptg.name,
+            # M.MaxCapacity.name: M.MaxCapacityConstraint_rpt.name,
+            # M.FixedCapacity.name: M.FixedCapacityConstraint_rtv.name,
+            # M.MaxCapacityGroup.name: M.MaxCapacityGroupConstraint_rpg.name,
+            # M.MaxCapacityShare.name: M.MaxCapacityShareConstraint_rptg.name,
+            # M.MaxNewCapacity.name: M.MaxNewCapacityConstraint_rpt.name,
+            # M.MaxNewCapacityGroup.name: M.MaxNewCapacityGroupConstraint_rpg.name,
+            # M.MaxNewCapacityShare.name: M.MaxNewCapacityShareConstraint_rptg.name,
             M.MaxResource.name: M.MaxResourceConstraint_rt.name,
             M.MinActivity.name: M.MinActivityConstraint_rpt.name,
             M.MinActivityGroup.name: M.MinActivityGroup_rpg.name,
             M.MinActivityShare.name: M.MinActivityShareConstraint_rptg.name,
             M.MinAnnualCapacityFactor.name: M.MinAnnualCapacityFactorConstraint_rpto.name,
-            M.MinCapacity.name: M.MinCapacityConstraint_rpt.name,
-            M.MinCapacityGroup.name: M.MinCapacityGroupConstraint_rpg.name,
-            M.MinCapacityShare.name: M.MinCapacityShareConstraint_rptg.name,
-            M.MinNewCapacity.name: M.MinNewCapacityConstraint_rpt.name,
-            M.MinNewCapacityGroup.name: M.MinNewCapacityGroupConstraint_rpg.name,
-            M.MinNewCapacityShare.name: M.MinNewCapacityShareConstraint_rptg.name,
+            # M.MinCapacity.name: M.MinCapacityConstraint_rpt.name,
+            # M.MinCapacityGroup.name: M.MinCapacityGroupConstraint_rpg.name,
+            # M.MinCapacityShare.name: M.MinCapacityShareConstraint_rptg.name,
+            # M.MinNewCapacity.name: M.MinNewCapacityConstraint_rpt.name,
+            # M.MinNewCapacityGroup.name: M.MinNewCapacityGroupConstraint_rpg.name,
+            # M.MinNewCapacityShare.name: M.MinNewCapacityShareConstraint_rptg.name,
             M.RenewablePortfolioStandard.name: M.RenewablePortfolioStandardConstraint_rpg.name,
             M.ResourceBound.name: M.ResourceConstraint_rpr.name,
             M.MaxHourlyIBRShare.name: M.MaxHourlyIBRShareConstraint_rpgo.name,
