@@ -64,72 +64,72 @@ def ParamAdjustedCapacity_rule(M: 'TemoaModel', r, p, t, v):
             return M.NewCapacity[r, t, v] - retired_cap
 
 
-# def Capacity_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
-#     r"""
-#     This constraint ensures that the capacity of a given process is sufficient
-#     to support its activity across all time periods and time slices. The calculation
-#     on the left hand side of the equality is the maximum amount of energy a process
-#     can produce in the timeslice :code:`(s,d)`. Note that the curtailment variable
-#     shown below only applies to technologies that are members of the curtailment set.
-#     Curtailment is necessary to track explicitly in scenarios that include a high
-#     renewable target. Without it, the model can generate more activity than is used
-#     to meet demand, and have all activity (including the portion curtailed) count
-#     towards the target. Tracking activity and curtailment separately prevents this
-#     possibility.
+def Capacity_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
+    r"""
+    This constraint ensures that the capacity of a given process is sufficient
+    to support its activity across all time periods and time slices. The calculation
+    on the left hand side of the equality is the maximum amount of energy a process
+    can produce in the timeslice :code:`(s,d)`. Note that the curtailment variable
+    shown below only applies to technologies that are members of the curtailment set.
+    Curtailment is necessary to track explicitly in scenarios that include a high
+    renewable target. Without it, the model can generate more activity than is used
+    to meet demand, and have all activity (including the portion curtailed) count
+    towards the target. Tracking activity and curtailment separately prevents this
+    possibility.
 
-#     .. math::
-#        :label: Capacity
+    .. math::
+       :label: Capacity
 
-#            \left (
-#                    \text{CFP}_{r, t, v}
-#              \cdot \text{C2A}_{r, t}
-#              \cdot \text{SEG}_{s, d}
-#              \cdot \text{PLF}_{r, p, t, v}
-#            \right )
-#            \cdot \textbf{CAP}_{r, t, v}
-#            =
-#            \sum_{I, O} \textbf{FO}_{r, p, s, d, i, t, v, o}
-#            +
-#            \sum_{I, O} \textbf{CUR}_{r, p, s, d, i, t, v, o}
+           \left (
+                   \text{CFP}_{r, t, v}
+             \cdot \text{C2A}_{r, t}
+             \cdot \text{SEG}_{s, d}
+             \cdot \text{PLF}_{r, p, t, v}
+           \right )
+           \cdot \textbf{CAP}_{r, t, v}
+           =
+           \sum_{I, O} \textbf{FO}_{r, p, s, d, i, t, v, o}
+           +
+           \sum_{I, O} \textbf{CUR}_{r, p, s, d, i, t, v, o}
 
-#        \\
-#        \forall \{r, p, s, d, t, v\} \in \Theta_{\text{FO}}
-#     """
-#     if t in M.tech_storage:
-#         return Constraint.Skip
-#     # The expressions below are defined in-line to minimize the amount of
-#     # expression cloning taking place with Pyomo.
+       \\
+       \forall \{r, p, s, d, t, v\} \in \Theta_{\text{FO}}
+    """
+    if t in M.tech_storage:
+        return Constraint.Skip
+    # The expressions below are defined in-line to minimize the amount of
+    # expression cloning taking place with Pyomo.
 
-#     useful_activity = sum(
-#         M.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
-#         for S_i in M.processInputs[r, p, t, v]
-#         for S_o in M.ProcessOutputsByInput[r, p, t, v, S_i]
-#     )
-#     if (r, s, d, t, v) in M.CapacityFactorProcess:
-#         # use the data provided
-#         capacity = value(M.CapacityFactorProcess[r, s, d, t, v])
-#     else:  # use the capacity factor for the tech
-#         capacity = value(M.CapacityFactorTech[r, s, d, t])
+    useful_activity = sum(
+        M.V_FlowOut[r, p, s, d, S_i, t, v, S_o]
+        for S_i in M.processInputs[r, p, t, v]
+        for S_o in M.ProcessOutputsByInput[r, p, t, v, S_i]
+    )
+    if (r, s, d, t, v) in M.CapacityFactorProcess:
+        # use the data provided
+        capacity = value(M.CapacityFactorProcess[r, s, d, t, v])
+    else:  # use the capacity factor for the tech
+        capacity = value(M.CapacityFactorTech[r, s, d, t])
 
-#     if t in M.tech_curtailment:
-#         # If technologies are present in the curtailment set, then enough
-#         # capacity must be available to cover both activity and curtailment.
-#         return capacity * value(M.CapacityToActivity[r, t]) * value(M.SegFrac[s, d]) * value(
-#             M.ProcessLifeFrac[r, p, t, v]
-#         ) * M.V_Capacity[r, p, t, v] == useful_activity + sum(
-#             M.V_Curtailment[r, p, s, d, S_i, t, v, S_o]
-#             for S_i in M.processInputs[r, p, t, v]
-#             for S_o in M.ProcessOutputsByInput[r, p, t, v, S_i]
-#         )
-#     else:
-#         return (
-#             capacity
-#             * value(M.CapacityToActivity[r, t])
-#             * value(M.SegFrac[s, d])
-#             * value(M.ProcessLifeFrac[r, p, t, v])
-#             * M.V_Capacity[r, p, t, v]
-#             >= useful_activity
-#         )
+    # if t in M.tech_curtailment:
+    #     # If technologies are present in the curtailment set, then enough
+    #     # capacity must be available to cover both activity and curtailment.
+    #     return capacity * value(M.CapacityToActivity[r, t]) * value(M.SegFrac[s, d]) * value(
+    #         M.ProcessLifeFrac[r, p, t, v]
+    #     ) * M.Capacity[r, p, t, v] == useful_activity + sum(
+    #         M.V_Curtailment[r, p, s, d, S_i, t, v, S_o] # dont have the memory for this
+    #         for S_i in M.processInputs[r, p, t, v]
+    #         for S_o in M.ProcessOutputsByInput[r, p, t, v, S_i]
+    #     )
+    # else:
+    return (
+        capacity
+        * value(M.CapacityToActivity[r, t])
+        * value(M.SegFrac[s, d])
+        * value(M.ProcessLifeFrac[r, p, t, v])
+        * M.Capacity[r, p, t, v]
+        >= useful_activity
+    )
 
 
 # def CapacityAnnual_Constraint(M: 'TemoaModel', r, p, t, v):
@@ -370,55 +370,55 @@ def TotalCost_rule(M):
     return sum(PeriodCost_rule(M, p) for p in M.time_optimize)
 
 
-# def loan_cost(
-#     capacity: float | Var,
-#     invest_cost: float,
-#     loan_annualize: float,
-#     lifetime_loan_process: float | int,
-#     P_0: int,
-#     P_e: int,
-#     GDR: float,
-#     vintage: int,
-# ) -> float | Expression:
-#     """
-#     function to calculate the loan cost.  It can be used with fixed values to produce a hard number or
-#     pyomo variables/params to make a pyomo Expression
-#     :param capacity: The capacity to use to calculate cost
-#     :param invest_cost: the cost/capacity
-#     :param loan_annualize: parameter
-#     :param lifetime_loan_process: lifetime of the loan
-#     :param P_0: the year to discount the costs back to
-#     :param P_e: the 'end year' or cutoff year for loan payments
-#     :param GDR: Global Discount Rate
-#     :param vintage: the base year of the loan
-#     :return: fixed number or pyomo expression based on input types
-#     """
-#     if GDR == 0:  # return the non-discounted result
-#         regular_payment = capacity * invest_cost * loan_annualize
-#         payments_made = min(lifetime_loan_process, P_e - vintage)
-#         return regular_payment * payments_made
-#     x = 1 + GDR  # a convenience
-#     res = (
-#         capacity
-#         * (
-#             invest_cost
-#             * loan_annualize
-#             * (
-#                 lifetime_loan_process
-#                 if not GDR
-#                 else (x ** (P_0 - vintage + 1) * (1 - x ** (-lifetime_loan_process)) / GDR)
-#             )
-#         )
-#         * (
-#             (1 - x ** (-min(lifetime_loan_process, P_e - vintage)))
-#             / (1 - x ** (-lifetime_loan_process))
-#         )
-#     )
-#     return res
+def loan_cost(
+    capacity: float | Var,
+    invest_cost: float,
+    loan_annualize: float,
+    lifetime_loan_process: float | int,
+    P_0: int,
+    P_e: int,
+    GDR: float,
+    vintage: int,
+) -> float | Expression:
+    """
+    function to calculate the loan cost.  It can be used with fixed values to produce a hard number or
+    pyomo variables/params to make a pyomo Expression
+    :param capacity: The capacity to use to calculate cost
+    :param invest_cost: the cost/capacity
+    :param loan_annualize: parameter
+    :param lifetime_loan_process: lifetime of the loan
+    :param P_0: the year to discount the costs back to
+    :param P_e: the 'end year' or cutoff year for loan payments
+    :param GDR: Global Discount Rate
+    :param vintage: the base year of the loan
+    :return: fixed number or pyomo expression based on input types
+    """
+    if GDR == 0:  # return the non-discounted result
+        regular_payment = capacity * invest_cost * loan_annualize
+        payments_made = min(lifetime_loan_process, P_e - vintage)
+        return regular_payment * payments_made
+    x = 1 + GDR  # a convenience
+    res = (
+        capacity
+        * (
+            invest_cost
+            * loan_annualize
+            * (
+                lifetime_loan_process
+                if not GDR
+                else (x ** (P_0 - vintage + 1) * (1 - x ** (-lifetime_loan_process)) / GDR)
+            )
+        )
+        * (
+            (1 - x ** (-min(lifetime_loan_process, P_e - vintage)))
+            / (1 - x ** (-lifetime_loan_process))
+        )
+    )
+    return res
 
 
-def variable_cost(
-    flow: float | Var,
+def fixed_or_variable_cost(
+    cap_or_flow: float | Var,
     cost_factor: float,
     process_lifetime: float,
     GDR: float | None,
@@ -437,7 +437,7 @@ def variable_cost(
     :return:
     """
     x = 1 + GDR
-    res = flow * (
+    res = cap_or_flow * (
         cost_factor
         * (
             process_lifetime
@@ -457,36 +457,36 @@ def PeriodCost_rule(M: 'TemoaModel', p):
     if value(M.MyopicBaseyear) != 0:
         P_0 = value(M.MyopicBaseyear)
 
-    # loan_costs = sum(
-    #     loan_cost(
-    #         M.V_NewCapacity[r, S_t, S_v],
-    #         M.CostInvest[r, S_t, S_v],
-    #         M.LoanAnnualize[r, S_t, S_v],
-    #         value(M.LoanLifetimeProcess[r, S_t, S_v]),
-    #         P_0,
-    #         P_e,
-    #         GDR,
-    #         vintage=S_v,
-    #     )
-    #     for r, S_t, S_v in M.CostInvest.sparse_iterkeys()
-    #     if S_v == p
-    # )
+    loan_costs = sum(
+        loan_cost(
+            M.NewCapacity[r, S_t, S_v],
+            M.CostInvest[r, S_t, S_v],
+            M.LoanAnnualize[r, S_t, S_v],
+            value(M.LoanLifetimeProcess[r, S_t, S_v]),
+            P_0,
+            P_e,
+            GDR,
+            vintage=S_v,
+        )
+        for r, S_t, S_v in M.CostInvest.sparse_iterkeys()
+        if S_v == p
+    )
 
-    # fixed_costs = sum(
-    #     fixed_or_variable_cost(
-    #         M.V_Capacity[r, p, S_t, S_v],
-    #         M.CostFixed[r, p, S_t, S_v],
-    #         MPL[r, p, S_t, S_v],
-    #         GDR,
-    #         P_0,
-    #         p=p,
-    #     )
-    #     for r, S_p, S_t, S_v in M.CostFixed.sparse_iterkeys()
-    #     if S_p == p
-    # )
+    fixed_costs = sum(
+        fixed_or_variable_cost(
+            M.Capacity[r, p, S_t, S_v],
+            M.CostFixed[r, p, S_t, S_v],
+            MPL[r, p, S_t, S_v],
+            GDR,
+            P_0,
+            p=p,
+        )
+        for r, S_p, S_t, S_v in M.CostFixed.sparse_iterkeys()
+        if S_p == p
+    )
 
     variable_costs = sum(
-        variable_cost(
+        fixed_or_variable_cost(
             M.V_FlowOut[r, p, s, d, S_i, S_t, S_v, S_o],
             M.CostVariable[r, p, S_t, S_v],
             MPL[r, p, S_t, S_v],
@@ -503,7 +503,7 @@ def PeriodCost_rule(M: 'TemoaModel', p):
     )
 
     variable_costs_annual = sum(
-        variable_cost(
+        fixed_or_variable_cost(
             M.V_FlowOutAnnual[r, p, S_i, S_t, S_v, S_o],
             M.CostVariable[r, p, S_t, S_v],
             MPL[r, p, S_t, S_v],
@@ -549,8 +549,8 @@ def PeriodCost_rule(M: 'TemoaModel', p):
 
     # 1. variable emissions
     var_emissions = sum(
-        variable_cost(
-            flow=M.V_FlowOut[r, p, s, d, i, t, v, o] * M.EmissionActivity[r, e, i, t, v, o],
+        fixed_or_variable_cost(
+            cap_or_flow=M.V_FlowOut[r, p, s, d, i, t, v, o] * M.EmissionActivity[r, e, i, t, v, o],
             cost_factor=M.CostEmission[r, p, e],
             process_lifetime=MPL[r, p, t, v],
             GDR=GDR,
@@ -566,8 +566,8 @@ def PeriodCost_rule(M: 'TemoaModel', p):
 
     # 4. annual emissions
     var_annual_emissions = sum(
-        variable_cost(
-            flow=M.V_FlowOutAnnual[r, p, i, t, v, o] * M.EmissionActivity[r, e, i, t, v, o],
+        fixed_or_variable_cost(
+            cap_or_flow=M.V_FlowOutAnnual[r, p, i, t, v, o] * M.EmissionActivity[r, e, i, t, v, o],
             cost_factor=M.CostEmission[r, p, e],
             process_lifetime=MPL[r, p, t, v],
             GDR=GDR,
@@ -582,8 +582,7 @@ def PeriodCost_rule(M: 'TemoaModel', p):
     period_emission_cost = var_emissions + var_annual_emissions
 
     period_costs = (
-        # loan_costs + fixed_costs + 
-        variable_costs + variable_costs_annual + period_emission_cost
+        loan_costs + fixed_costs + variable_costs + variable_costs_annual + period_emission_cost
     )
     return period_costs
 
@@ -3294,26 +3293,26 @@ def ParamProcessLifeFraction_rule(M: 'TemoaModel', r, p, t, v):
     return frac
 
 
-# def loan_annualization_rate(loan_rate: float | None, loan_life: int | float) -> float:
-#     """
-#     This calculation is broken out specifically so that it can be used for param creation
-#     and separately to calculate loan costs rather than rely on fully-built model parameters
-#     :param loan_rate:
-#     :param loan_life:
+def loan_annualization_rate(loan_rate: float | None, loan_life: int | float) -> float:
+    """
+    This calculation is broken out specifically so that it can be used for param creation
+    and separately to calculate loan costs rather than rely on fully-built model parameters
+    :param loan_rate:
+    :param loan_life:
 
-#     """
-#     if not loan_rate:
-#         # dev note:  this should not be needed as the LoanRate param has a default (see the definition)
-#         return 1.0 / loan_life
-#     annualized_rate = loan_rate / (1.0 - (1.0 + loan_rate) ** (-loan_life))
-#     return annualized_rate
+    """
+    if not loan_rate:
+        # dev note:  this should not be needed as the LoanRate param has a default (see the definition)
+        return 1.0 / loan_life
+    annualized_rate = loan_rate / (1.0 - (1.0 + loan_rate) ** (-loan_life))
+    return annualized_rate
 
 
-# def ParamLoanAnnualize_rule(M: 'TemoaModel', r, t, v):
-#     dr = value(M.LoanRate[r, t, v])
-#     lln = value(M.LoanLifetimeProcess[r, t, v])
-#     annualized_rate = loan_annualization_rate(dr, lln)
-#     return annualized_rate
+def ParamLoanAnnualize_rule(M: 'TemoaModel', r, t, v):
+    dr = value(M.LoanRate[r, t, v])
+    lln = value(M.LoanLifetimeProcess[r, t, v])
+    annualized_rate = loan_annualization_rate(dr, lln)
+    return annualized_rate
 
 
 def SegFracPerSeason_rule(M: 'TemoaModel', s):

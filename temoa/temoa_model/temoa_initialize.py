@@ -679,8 +679,8 @@ def CreateSparseDicts(M: 'TemoaModel'):
             # technology subsets.
             if (r, p, t) not in M.processVintages:
                 M.processVintages[r, p, t] = set()
-            if t in M.tech_curtailment and (r, p, t) not in M.curtailmentVintages:
-                M.curtailmentVintages[r, p, t] = set()
+            # if t in M.tech_curtailment and (r, p, t) not in M.curtailmentVintages:
+            #     M.curtailmentVintages[r, p, t] = set()
             if t in M.tech_baseload and (r, p, t) not in M.baseloadVintages:
                 M.baseloadVintages[r, p, t] = set()
             if t in M.tech_storage and (r, p, t) not in M.storageVintages:
@@ -731,8 +731,8 @@ def CreateSparseDicts(M: 'TemoaModel'):
             M.ProcessInputsByOutput[r, p, t, v, o].add(i)
             M.processTechs[r, t].add((p, v))
             M.processVintages[r, p, t].add(v)
-            if t in M.tech_curtailment:
-                M.curtailmentVintages[r, p, t].add(v)
+            # if t in M.tech_curtailment:
+            #     M.curtailmentVintages[r, p, t].add(v)
             if t in M.tech_baseload:
                 M.baseloadVintages[r, p, t].add(v)
             if t in M.tech_storage:

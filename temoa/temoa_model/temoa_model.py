@@ -39,7 +39,7 @@ from temoa.temoa_model.model_checking.validators import (
     validate_CapacityFactorProcess,
     region_group_check,
     validate_Efficiency,
-    check_flex_curtail,
+    # check_flex_curtail,
 )
 from temoa.temoa_model.temoa_initialize import *
 from temoa.temoa_model.temoa_initialize import get_loan_life
@@ -152,10 +152,10 @@ class TemoaModel(AbstractModel):
         M.tech_storage = Set(within=M.tech_all - M.tech_annual)
         M.tech_reserve = Set(within=M.tech_all)
         M.tech_ramping = Set(within=M.tech_all)
-        M.tech_curtailment = Set(within=M.tech_all)
+        # M.tech_curtailment = Set(within=M.tech_all)
         M.tech_flex = Set(within=M.tech_all)
         # ensure there is no overlap flex <=> curtailable technologies
-        M.check_flex_and_curtailment = BuildAction(rule=check_flex_curtail)
+        # M.check_flex_and_curtailment = BuildAction(rule=check_flex_curtail)
         M.tech_exchange = Set(within=M.tech_all)
 
         # Define groups for technologies
@@ -292,14 +292,14 @@ class TemoaModel(AbstractModel):
         M.LifetimeProcess_rtv = Set(dimen=3, initialize=LifetimeProcessIndices)
         M.LifetimeProcess = Param(M.LifetimeProcess_rtv, default=get_default_process_lifetime)
 
-        # M.LoanLifetimeTech = Param(M.RegionalIndices, M.tech_all, default=30)
-        # M.LoanLifetimeProcess_rtv = Set(dimen=3, initialize=LifetimeLoanProcessIndices)
+        M.LoanLifetimeTech = Param(M.RegionalIndices, M.tech_all, default=30)
+        M.LoanLifetimeProcess_rtv = Set(dimen=3, initialize=LifetimeLoanProcessIndices)
 
         # Dev Note:  The LoanLifetimeProcess table *could* be removed.  There is no longer a supporting
         #            table in the database.  It is just a "passthrough" now to the default LoanLifetimeTech.
         #            It is already stitched in to the model, so will leave it for now.  Table may be revived.
 
-        # M.LoanLifetimeProcess = Param(M.LoanLifetimeProcess_rtv, default=get_loan_life)
+        M.LoanLifetimeProcess = Param(M.LoanLifetimeProcess_rtv, default=get_loan_life)
 
         M.TechInputSplit = Param(M.regions, M.time_optimize, M.commodity_physical, M.tech_all)
         M.TechInputSplitAverage = Param(
@@ -320,15 +320,15 @@ class TemoaModel(AbstractModel):
         # Define technology cost parameters
         # dev note:  the CostFixed_rptv isn't truly needed, but it is included in a constraint, so
         #            let it go for now
-        # M.CostFixed_rptv = Set(dimen=4, initialize=CostFixedIndices)
-        # M.CostFixed = Param(M.CostFixed_rptv)
+        M.CostFixed_rptv = Set(dimen=4, initialize=CostFixedIndices)
+        M.CostFixed = Param(M.CostFixed_rptv)
 
-        # M.CostInvest_rtv = Set(within=M.RegionalIndices * M.tech_all * M.time_optimize)
-        # M.CostInvest = Param(M.CostInvest_rtv)
+        M.CostInvest_rtv = Set(within=M.RegionalIndices * M.tech_all * M.time_optimize)
+        M.CostInvest = Param(M.CostInvest_rtv)
 
-        # M.DefaultLoanRate = Param(domain=NonNegativeReals)
-        # M.LoanRate = Param(M.CostInvest_rtv, domain=NonNegativeReals, default=get_default_loan_rate)
-        # M.LoanAnnualize = Param(M.CostInvest_rtv, initialize=ParamLoanAnnualize_rule)
+        M.DefaultLoanRate = Param(domain=NonNegativeReals)
+        M.LoanRate = Param(M.CostInvest_rtv, domain=NonNegativeReals, default=get_default_loan_rate)
+        M.LoanAnnualize = Param(M.CostInvest_rtv, initialize=ParamLoanAnnualize_rule)
 
         M.CostVariable_rptv = Set(dimen=4, initialize=CostVariableIndices)
         M.CostVariable = Param(M.CostVariable_rptv)
@@ -562,8 +562,8 @@ class TemoaModel(AbstractModel):
         M.progress_marker_4 = BuildAction(['Starting to build Constraints'], rule=progress_check)
 
         # Declare constraints to calculate derived decision variables
-        # M.CapacityConstraint_rpsdtv = Set(dimen=6, initialize=CapacityConstraintIndices)
-        # M.CapacityConstraint = Constraint(M.CapacityConstraint_rpsdtv, rule=Capacity_Constraint)
+        M.CapacityConstraint_rpsdtv = Set(dimen=6, initialize=CapacityConstraintIndices)
+        M.CapacityConstraint = Constraint(M.CapacityConstraint_rpsdtv, rule=Capacity_Constraint)
 
         # M.CapacityAnnualConstraint_rptv = Set(dimen=4, initialize=CapacityAnnualConstraintIndices)
         # M.CapacityAnnualConstraint = Constraint(

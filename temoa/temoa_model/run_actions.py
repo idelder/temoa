@@ -241,8 +241,8 @@ def solve_instance(
             # (see: https://pypsa-eur.readthedocs.io/en/latest/configuration.html)
             optimizer.options['lpmethod'] = 4  # barrier
             optimizer.options['solutiontype'] = 2  # non basic solution, ie no crossover
-            optimizer.options['barrier convergetol'] = 1.0e-4
-            optimizer.options['feasopt tolerance'] = 1.0e-4
+            optimizer.options['barrier convergetol'] = 1.0e-3
+            optimizer.options['feasopt tolerance'] = 1.0e-3
 
         elif solver_name == 'gurobi':
             # Note: these parameter values are taken to be the same as those in PyPSA (see: https://pypsa-eur.readthedocs.io/en/latest/configuration.html)
@@ -279,9 +279,9 @@ def solve_instance(
             # currently, the highs solver call will puke if the suffixes are passed, so we need to
             # differentiate...
             if solver_name == 'appsi_highs':
-                result = optimizer.solve(instance)
+                result = optimizer.solve(instance, tee=True)
             else:
-                result = optimizer.solve(instance, suffixes=solver_suffixes)
+                result = optimizer.solve(instance, suffixes=solver_suffixes, tee=True)
         except RuntimeError as error:
             logger.error('Solver failed to solve and returned an error: %s', error)
             logger.error(

@@ -444,8 +444,8 @@ class HybridLoader:
         # deterministic behavior
 
         # tech_curtailment
-        raw = cur.execute('SELECT tech FROM Technology WHERE curtail > 0').fetchall()
-        load_element(M.tech_curtailment, raw, self.viable_techs)
+        # raw = cur.execute('SELECT tech FROM Technology WHERE curtail > 0').fetchall()
+        # load_element(M.tech_curtailment, raw, self.viable_techs)
 
         # tech_flex
         raw = cur.execute('SELECT tech FROM Technology WHERE flex > 0').fetchall()
@@ -600,9 +600,9 @@ class HybridLoader:
         ).fetchall()
         load_element(M.LifetimeProcess, raw, self.viable_rtv, val_loc=(0, 1, 2))
 
-        # # LoanLifetimeTech
-        # raw = cur.execute('SELECT region, tech, lifetime FROM main.LoanLifetimeTech').fetchall()
-        # load_element(M.LoanLifetimeTech, raw, self.viable_rt, (0, 1))
+        # LoanLifetimeTech
+        raw = cur.execute('SELECT region, tech, lifetime FROM main.LoanLifetimeTech').fetchall()
+        load_element(M.LoanLifetimeTech, raw, self.viable_rt, (0, 1))
 
         # TechInputSplit
         if mi:
@@ -711,30 +711,30 @@ class HybridLoader:
             load_element(M.RenewablePortfolioStandard, raw)
 
 
-        # # CostFixed
-        # if mi:
-        #     raw = cur.execute(
-        #         'SELECT region, period, tech, vintage, cost FROM main.CostFixed '
-        #         'WHERE period >= ? AND period <= ?',
-        #         (mi.base_year, mi.last_demand_year),
-        #     ).fetchall()
-        # else:
-        #     raw = cur.execute(
-        #         'SELECT region, period, tech, vintage, cost FROM main.CostFixed '
-        #     ).fetchall()
-        # load_element(M.CostFixed, raw, self.viable_rtv, val_loc=(0, 2, 3))
+        # CostFixed
+        if mi:
+            raw = cur.execute(
+                'SELECT region, period, tech, vintage, cost FROM main.CostFixed '
+                'WHERE period >= ? AND period <= ?',
+                (mi.base_year, mi.last_demand_year),
+            ).fetchall()
+        else:
+            raw = cur.execute(
+                'SELECT region, period, tech, vintage, cost FROM main.CostFixed '
+            ).fetchall()
+        load_element(M.CostFixed, raw, self.viable_rtv, val_loc=(0, 2, 3))
 
-        # # CostInvest
-        # # exclude "existing" vintages by screening for base year and beyond.
-        # # the "viable_rtv" will filter anything beyond view
-        # if mi:
-        #     raw = cur.execute(
-        #         'SELECT region, tech, vintage, cost FROM main.CostInvest ' 'WHERE vintage >= ?',
-        #         (mi.base_year,),
-        #     ).fetchall()
-        # else:
-        #     raw = cur.execute('SELECT region, tech, vintage, cost FROM main.CostInvest ').fetchall()
-        # load_element(M.CostInvest, raw, self.viable_rtv, (0, 1, 2))
+        # CostInvest
+        # exclude "existing" vintages by screening for base year and beyond.
+        # the "viable_rtv" will filter anything beyond view
+        if mi:
+            raw = cur.execute(
+                'SELECT region, tech, vintage, cost FROM main.CostInvest ' 'WHERE vintage >= ?',
+                (mi.base_year,),
+            ).fetchall()
+        else:
+            raw = cur.execute('SELECT region, tech, vintage, cost FROM main.CostInvest ').fetchall()
+        load_element(M.CostInvest, raw, self.viable_rtv, (0, 1, 2))
 
         # CostVariable
         if mi:
@@ -776,23 +776,23 @@ class HybridLoader:
                 ).fetchall()
                 load_element(M.CostEmission, raw)
 
-        # # DefaultLoanRate
-        # raw = cur.execute(
-        #     "SELECT value FROM main.MetaDataReal WHERE element = 'default_loan_rate'"
-        # ).fetchall()
-        # # do this separately as it is non-indexed, so we need to make a mapping with None
-        # data[M.DefaultLoanRate.name] = {None: raw[0][0]}
+        # DefaultLoanRate
+        raw = cur.execute(
+            "SELECT value FROM main.MetaDataReal WHERE element = 'default_loan_rate'"
+        ).fetchall()
+        # do this separately as it is non-indexed, so we need to make a mapping with None
+        data[M.DefaultLoanRate.name] = {None: raw[0][0]}
 
-        # # LoanRate
-        # if mi:
-        #     raw = cur.execute(
-        #         'SELECT region, tech, vintage, rate FROM main.LoanRate ' 'WHERE vintage >= ?',
-        #         (mi.base_year,),
-        #     ).fetchall()
-        # else:
-        #     raw = cur.execute('SELECT region, tech, vintage, rate FROM main.LoanRate ').fetchall()
+        # LoanRate
+        if mi:
+            raw = cur.execute(
+                'SELECT region, tech, vintage, rate FROM main.LoanRate ' 'WHERE vintage >= ?',
+                (mi.base_year,),
+            ).fetchall()
+        else:
+            raw = cur.execute('SELECT region, tech, vintage, rate FROM main.LoanRate ').fetchall()
 
-        # load_element(M.LoanRate, raw, self.viable_rtv, (0, 1, 2))
+        load_element(M.LoanRate, raw, self.viable_rtv, (0, 1, 2))
 
         # # MinCapacity
         # if self.table_exists('MinCapacity'):
@@ -1325,7 +1325,7 @@ class HybridLoader:
 
         M: TemoaModel = TemoaModel()  # for typing
         param_idx_sets = {
-            # M.CostInvest.name: M.CostInvest_rtv.name,
+            M.CostInvest.name: M.CostInvest_rtv.name,
             M.EmissionLimit.name: M.EmissionLimitConstraint_rpe.name,
             M.MaxActivity.name: M.MaxActivityConstraint_rpt.name,
             M.MaxActivityGroup.name: M.MaxActivityGroup_rpg.name,
