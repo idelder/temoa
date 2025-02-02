@@ -1269,10 +1269,10 @@ class HybridLoader:
         #         ).fetchall()
         #     load_element(M.CapacityCredit, raw, self.viable_rtv, (0, 2, 3))
 
-        # PlanningReserveMargin
-        if self.table_exists('PlanningReserveMargin'):
-            raw = cur.execute('SELECT region, margin FROM main.PlanningReserveMargin').fetchall()
-            load_element(M.PlanningReserveMargin, raw)
+        # # PlanningReserveMargin
+        # if self.table_exists('PlanningReserveMargin'):
+        #     raw = cur.execute('SELECT region, margin FROM main.PlanningReserveMargin').fetchall()
+        #     load_element(M.PlanningReserveMargin, raw)
 
         # StorageDuration
         if self.table_exists('StorageDuration'):
@@ -1351,7 +1351,7 @@ class HybridLoader:
             # M.MinNewCapacityGroup.name: M.MinNewCapacityGroupConstraint_rpg.name,
             # M.MinNewCapacityShare.name: M.MinNewCapacityShareConstraint_rptg.name,
             M.RenewablePortfolioStandard.name: M.RenewablePortfolioStandardConstraint_rpg.name,
-            M.ResourceBound.name: M.ResourceConstraint_rpr.name,
+            # M.ResourceBound.name: M.ResourceConstraint_rpr.name,
             M.MaxHourlyIBRShare.name: M.MaxHourlyIBRShareConstraint_rpgo.name,
         }
 

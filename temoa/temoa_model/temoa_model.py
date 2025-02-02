@@ -235,20 +235,20 @@ class TemoaModel(AbstractModel):
         M.Demand = Param(M.regions, M.time_optimize, M.commodity_demand)
         M.initialize_Demands = BuildAction(rule=CreateDemands)
 
-        M.PeakLoad = Param(M.regions, M.time_optimize, mutable=True)
-        M.initialize_PeakLoad = BuildAction(rule=CreatePeakLoad)
+        # M.PeakLoad = Param(M.regions, M.time_optimize, mutable=True)
+        # M.initialize_PeakLoad = BuildAction(rule=CreatePeakLoad)
         # TODO:  Revive this with the DB schema and refactor the associated constraint
-        M.ResourceConstraint_rpr = Set(within=M.regions * M.time_optimize * M.commodity_physical)
+        # M.ResourceConstraint_rpr = Set(within=M.regions * M.time_optimize * M.commodity_physical)
 
         # Dev Note:  This parameter is currently NOT implemented.  Preserved for later refactoring
-        M.ResourceBound = Param(M.ResourceConstraint_rpr)
+        # M.ResourceBound = Param(M.ResourceConstraint_rpr)
 
         # Define technology performance parameters
         M.CapacityToActivity = Param(M.RegionalIndices, M.tech_all, default=1)
 
         M.ExistingCapacity = Param(M.RegionalIndices, M.tech_with_capacity, M.vintage_exist)
-        M.NewCapacity = Param(M.RegionalIndices, M.tech_with_capacity, M.vintage_optimize)
-        M.RetiredCapacity = Param(M.RegionalIndices, M.time_optimize, M.tech_with_capacity, M.vintage_all)
+        M.NewCapacity = Param(M.RegionalIndices, M.tech_with_capacity, M.vintage_optimize, default=0)
+        M.RetiredCapacity = Param(M.RegionalIndices, M.time_optimize, M.tech_with_capacity, M.vintage_all, default=0)
 
         # Dev Note:  The below is temporarily useful for passing down to validator to find set violations
         #            Uncomment this assignment, and comment out the orig below it...
@@ -478,7 +478,7 @@ class TemoaModel(AbstractModel):
         # M.CapacityCredit = Param(
         #     M.RegionalIndices, M.time_optimize, M.tech_all, M.vintage_all, default=0
         # )
-        M.PlanningReserveMargin = Param(M.regions, default=0.2)
+        # M.PlanningReserveMargin = Param(M.regions, default=0.2)
         # Storage duration is expressed in hours
         M.StorageDuration = Param(M.regions, M.tech_storage, default=4)
         # Initial storage charge level, expressed as fraction of full energy capacity.
@@ -565,10 +565,10 @@ class TemoaModel(AbstractModel):
         M.CapacityConstraint_rpsdtv = Set(dimen=6, initialize=CapacityConstraintIndices)
         M.CapacityConstraint = Constraint(M.CapacityConstraint_rpsdtv, rule=Capacity_Constraint)
 
-        # M.CapacityAnnualConstraint_rptv = Set(dimen=4, initialize=CapacityAnnualConstraintIndices)
-        # M.CapacityAnnualConstraint = Constraint(
-        #     M.CapacityAnnualConstraint_rptv, rule=CapacityAnnual_Constraint
-        # )
+        M.CapacityAnnualConstraint_rptv = Set(dimen=4, initialize=CapacityAnnualConstraintIndices)
+        M.CapacityAnnualConstraint = Constraint(
+            M.CapacityAnnualConstraint_rptv, rule=CapacityAnnual_Constraint
+        )
 
         # M.CapacityAvailableByPeriodAndTechConstraint = Constraint(
         #     M.CapacityAvailableVar_rpt, rule=CapacityAvailableByPeriodAndTech_Constraint
@@ -609,9 +609,9 @@ class TemoaModel(AbstractModel):
             M.CommodityBalanceAnnualConstraint_rpc, rule=CommodityBalanceAnnual_Constraint
         )
 
-        M.ResourceExtractionConstraint = Constraint(
-            M.ResourceConstraint_rpr, rule=ResourceExtraction_Constraint
-        )
+        # M.ResourceExtractionConstraint = Constraint(
+        #     M.ResourceConstraint_rpr, rule=ResourceExtraction_Constraint
+        # )
 
         M.BaseloadDiurnalConstraint_rpsdtv = Set(
             dimen=6, initialize=BaseloadDiurnalConstraintIndices
@@ -661,9 +661,7 @@ class TemoaModel(AbstractModel):
 
         M.RampConstraintDay_rpsdtv = Set(dimen=6, initialize=RampConstraintDayIndices)
         M.RampUpConstraintDay = Constraint(M.RampConstraintDay_rpsdtv, rule=RampUpDay_Constraint)
-        M.RampDownConstraintDay = Constraint(
-            M.RampConstraintDay_rpsdtv, rule=RampDownDay_Constraint
-        )
+        M.RampDownConstraintDay = Constraint(M.RampConstraintDay_rpsdtv, rule=RampDownDay_Constraint)
 
         # M.RampConstraintSeason_rpstv = Set(dimen=5, initialize=RampConstraintSeasonIndices)
         # M.RampUpConstraintSeason = Constraint(
@@ -673,18 +671,18 @@ class TemoaModel(AbstractModel):
         #     M.RampConstraintSeason_rpstv, rule=RampDownSeason_Constraint
         # )
 
-        M.RampConstraintPeriod_rptv = Set(dimen=4, initialize=RampConstraintPeriodIndices)
-        M.RampUpConstraintPeriod = Constraint(
-            M.RampConstraintPeriod_rptv, rule=RampUpPeriod_Constraint
-        )
-        M.RampDownConstraintPeriod = Constraint(
-            M.RampConstraintPeriod_rptv, rule=RampDownPeriod_Constraint
-        )
+        # M.RampConstraintPeriod_rptv = Set(dimen=4, initialize=RampConstraintPeriodIndices)
+        # M.RampUpConstraintPeriod = Constraint(
+        #     M.RampConstraintPeriod_rptv, rule=RampUpPeriod_Constraint
+        # )
+        # M.RampDownConstraintPeriod = Constraint(
+        #     M.RampConstraintPeriod_rptv, rule=RampDownPeriod_Constraint
+        # )
 
         # M.ReserveMargin_rpsd = Set(dimen=4, initialize=ReserveMarginIndices)
         # M.ReserveMarginConstraint = Constraint(M.ReserveMargin_rpsd, rule=ReserveMargin_Constraint)
-        M.ReserveMargin_rp = Set(dimen=2, initialize=ReserveMarginIndices)
-        M.ReserveMarginConstraint = Constraint(M.ReserveMargin_rp, rule=ReserveMargin_Constraint)
+        # M.ReserveMargin_rp = Set(dimen=2, initialize=ReserveMarginIndices)
+        # M.ReserveMarginConstraint = Constraint(M.ReserveMargin_rp, rule=ReserveMargin_Constraint)
 
 
         M.EmissionLimitConstraint = Constraint(
@@ -796,9 +794,9 @@ class TemoaModel(AbstractModel):
             ['Starting Max/Min Capacity and Tech Split ' 'Constraints'], rule=progress_check
         )
 
-        M.MaxResourceConstraint = Constraint(
-            M.MaxResourceConstraint_rt, rule=MaxResource_Constraint
-        )
+        # M.MaxResourceConstraint = Constraint(
+        #     M.MaxResourceConstraint_rt, rule=MaxResource_Constraint
+        # )
 
         # M.MinCapacityConstraint = Constraint(
         #     M.MinCapacityConstraint_rpt, rule=MinCapacity_Constraint

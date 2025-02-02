@@ -242,14 +242,14 @@ def solve_instance(
             optimizer.options['lpmethod'] = 4  # barrier
             optimizer.options['solutiontype'] = 2  # non basic solution, ie no crossover
             optimizer.options['barrier convergetol'] = 1.0e-3
-            optimizer.options['feasopt tolerance'] = 1.0e-3
+            optimizer.options['feasopt tolerance'] = 1.0e-4
 
         elif solver_name == 'gurobi':
             # Note: these parameter values are taken to be the same as those in PyPSA (see: https://pypsa-eur.readthedocs.io/en/latest/configuration.html)
             optimizer.options["Method"] = 2  # barrier
             optimizer.options["Crossover"] = 0  # non basic solution, ie no crossover
             optimizer.options["BarConvTol"] = 1.e-3
-            optimizer.options["FeasibilityTol"] = 1.e-3
+            optimizer.options["FeasibilityTol"] = 1.e-4
 
         elif solver_name == 'appsi_highs':
             pass

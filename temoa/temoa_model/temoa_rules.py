@@ -132,47 +132,47 @@ def Capacity_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
     )
 
 
-# def CapacityAnnual_Constraint(M: 'TemoaModel', r, p, t, v):
-#     r"""
-# Similar to Capacity_Constraint, but for technologies belonging to the
-# :code:`tech_annual`  set. Technologies in the tech_annual set have constant output
-# across different timeslices within a year, so we do not need to ensure
-# that installed capacity is sufficient across all timeslices, thus saving
-# some computational effort. Instead, annual output is sufficient to calculate
-# capacity.
+def CapacityAnnual_Constraint(M: 'TemoaModel', r, p, t, v):
+    r"""
+Similar to Capacity_Constraint, but for technologies belonging to the
+:code:`tech_annual`  set. Technologies in the tech_annual set have constant output
+across different timeslices within a year, so we do not need to ensure
+that installed capacity is sufficient across all timeslices, thus saving
+some computational effort. Instead, annual output is sufficient to calculate
+capacity.
 
-# .. math::
-#    :label: CapacityAnnual
+.. math::
+   :label: CapacityAnnual
 
-#        \left (
-#                \text{CFP}_{r, t, v}
-#          \cdot \text{C2A}_{r, t}
-#          \cdot \text{PLF}_{r, p, t, v}
-#        \right )
-#        \cdot \textbf{CAP}_{r, t, v}
-#    =
-#        \sum_{I, O} \textbf{FOA}_{r, p, i, t \in T^{a}, v, o}
+       \left (
+               \text{CFP}_{r, t, v}
+         \cdot \text{C2A}_{r, t}
+         \cdot \text{PLF}_{r, p, t, v}
+       \right )
+       \cdot \textbf{CAP}_{r, t, v}
+   =
+       \sum_{I, O} \textbf{FOA}_{r, p, i, t \in T^{a}, v, o}
 
-#    \\
-#    \forall \{r, p, t \in T^{a}, v\} \in \Theta_{\text{Activity}}
+   \\
+   \forall \{r, p, t \in T^{a}, v\} \in \Theta_{\text{Activity}}
 
 
-# """
-#     CF = 1  # placeholder CF
+"""
+    CF = 1  # placeholder CF
 
-#     activity_rptv = sum(
-#         M.V_FlowOutAnnual[r, p, S_i, t, v, S_o]
-#         for S_i in M.processInputs[r, p, t, v]
-#         for S_o in M.ProcessOutputsByInput[r, p, t, v, S_i]
-#     )
+    activity_rptv = sum(
+        M.V_FlowOutAnnual[r, p, S_i, t, v, S_o]
+        for S_i in M.processInputs[r, p, t, v]
+        for S_o in M.ProcessOutputsByInput[r, p, t, v, S_i]
+    )
 
-#     return (
-#         CF
-#         * value(M.CapacityToActivity[r, t])
-#         * value(M.ProcessLifeFrac[r, p, t, v])
-#         * M.V_Capacity[r, p, t, v]
-#         >= activity_rptv
-#     )
+    return (
+        CF
+        * value(M.CapacityToActivity[r, t])
+        * value(M.ProcessLifeFrac[r, p, t, v])
+        * M.Capacity[r, p, t, v]
+        >= activity_rptv
+    )
 
 
 # def ActivityByTech_Constraint(M: 'TemoaModel', t):
