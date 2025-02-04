@@ -279,9 +279,9 @@ def solve_instance(
             # currently, the highs solver call will puke if the suffixes are passed, so we need to
             # differentiate...
             if solver_name == 'appsi_highs':
-                result = optimizer.solve(instance)
+                result = optimizer.solve(instance, tee=True)
             else:
-                result = optimizer.solve(instance, suffixes=solver_suffixes)
+                result = optimizer.solve(instance, suffixes=solver_suffixes, tee=True)
         except RuntimeError as error:
             logger.error('Solver failed to solve and returned an error: %s', error)
             logger.error(

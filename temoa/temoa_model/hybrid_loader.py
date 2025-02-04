@@ -362,11 +362,11 @@ class HybridLoader:
         raw = cur.execute('SELECT month FROM main.TimeMonth ORDER BY sequence').fetchall()
         load_element(M.time_month, raw)
 
-        # season_to_month_map
-        raw = cur.execute(
-            'SELECT month, season FROM main.MonthToSeasonMap'
-        ).fetchall()
-        load_element(M.season_to_month_map, raw)
+        # # season_to_month_map
+        # raw = cur.execute(
+        #     'SELECT month, season FROM main.MonthToSeasonMap'
+        # ).fetchall()
+        # load_element(M.season_to_month_map, raw)
 
         # myopic_base_year
         if mi:
