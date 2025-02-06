@@ -260,18 +260,18 @@ class TableWriter:
         scenario = self.config.scenario
         if iteration is not None:
             scenario = scenario + f'-{iteration}'
-        # # Built Capacity
-        # data = []
-        # for r, t, v in M.V_NewCapacity:
-        #     if v in M.time_optimize:
-        #         val = value(M.V_NewCapacity[r, t, v])
-        #         s = self.tech_sectors.get(t)
-        #         if abs(val) < self.epsilon:
-        #             continue
-        #         new_cap = (scenario, r, s, t, v, val)
-        #         data.append(new_cap)
-        # qry = 'INSERT INTO OutputBuiltCapacity VALUES (?, ?, ?, ?, ?, ?)'
-        # self.con.executemany(qry, data)
+        # Built Capacity
+        data = []
+        for r, t, v in M.NewCapacity:
+            if v in M.time_optimize:
+                val = value(M.NewCapacity[r, t, v])
+                s = self.tech_sectors.get(t)
+                if abs(val) < self.epsilon:
+                    continue
+                new_cap = (scenario, r, s, t, v, val)
+                data.append(new_cap)
+        qry = 'INSERT INTO OutputBuiltCapacity VALUES (?, ?, ?, ?, ?, ?)'
+        self.con.executemany(qry, data)
 
         # NetCapacity
         data = []
@@ -285,17 +285,17 @@ class TableWriter:
         qry = 'INSERT INTO OutputNetCapacity VALUES (?, ?, ?, ?, ?, ?, ?)'
         self.con.executemany(qry, data)
 
-        # # Retired Capacity
-        # data = []
-        # for r, p, t, v in M.V_RetiredCapacity:
-        #     val = value(M.V_RetiredCapacity[r, p, t, v])
-        #     if abs(val) < self.epsilon:
-        #         continue
-        #     s = self.tech_sectors.get(t)
-        #     new_retired_cap = (scenario, r, s, p, t, v, val)
-        #     data.append(new_retired_cap)
-        # qry = 'INSERT INTO OutputRetiredCapacity VALUES (?, ?, ?, ?, ?, ?, ?)'
-        # self.con.executemany(qry, data)
+        # Retired Capacity
+        data = []
+        for r, p, t, v in M.RetiredCapacity:
+            val = value(M.RetiredCapacity[r, p, t, v])
+            if abs(val) < self.epsilon:
+                continue
+            s = self.tech_sectors.get(t)
+            new_retired_cap = (scenario, r, s, p, t, v, val)
+            data.append(new_retired_cap)
+        qry = 'INSERT INTO OutputRetiredCapacity VALUES (?, ?, ?, ?, ?, ?, ?)'
+        self.con.executemany(qry, data)
 
         self.con.commit()
 
@@ -341,8 +341,8 @@ class TableWriter:
             for flow_type, table_name in table_associations.items():
                 # Filtered flows based on specified criteria
                 filtered_flows = [flow for flow in flows_by_type[flow_type] if
-                                  #flow[1] in ['AB', 'ON', 'ON-QC', 'QC-ON', 'AB-BC', 'BC-AB', 'SK-AB', 'AB-SK'] and flow[3] in [2035, 2050]]
-                                  flow[7] == 'E_HYD_MLY-EXS']
+                                  flow[1] in ['AB', 'ON', 'ON-QC', 'QC-ON', 'AB-BC', 'BC-AB', 'SK-AB', 'AB-SK'] and flow[3] in [2035, 2050]]
+                                  #flow[7] == 'E_HYD_MLY-EXS']
 
                 qry = f'INSERT INTO {table_name} VALUES {_marks(11)}'
                 self.con.executemany(qry, filtered_flows)

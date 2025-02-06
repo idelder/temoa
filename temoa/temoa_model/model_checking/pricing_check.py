@@ -335,19 +335,19 @@ def check_tech_uncap(M: 'TemoaModel') -> bool:
                 extra_periods,
             )
 
-    capacity_params = (M.MaxCapacity, M.MinCapacity, M.ExistingCapacity)
-    bad_cap_entries = False
-    for param in capacity_params:
-        bad_entries = {(r, t, v) for r, t, v in param.keys() if t in M.tech_uncap}
-        if bad_entries:
-            for entry in bad_entries:
-                logger.error(
-                    'Cannot limit unlimited capacity tech %s in table %s: %s',
-                    entry[1],
-                    param.name,
-                    entry,
-                )
+    # capacity_params = (M.MaxCapacity, M.MinCapacity, M.ExistingCapacity)
+    # bad_cap_entries = False
+    # for param in capacity_params:
+    #     bad_entries = {(r, t, v) for r, t, v in param.keys() if t in M.tech_uncap}
+    #     if bad_entries:
+    #         for entry in bad_entries:
+    #             logger.error(
+    #                 'Cannot limit unlimited capacity tech %s in table %s: %s',
+    #                 entry[1],
+    #                 param.name,
+    #                 entry,
+    #             )
 
-    if any((rtv_with_fixed_cost, rtv_with_invest_cost, bad_var_costs, bad_cap_entries)):
+    if any((rtv_with_fixed_cost, rtv_with_invest_cost, bad_var_costs)):
         return False
     return True
