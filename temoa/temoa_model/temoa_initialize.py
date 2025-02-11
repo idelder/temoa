@@ -473,9 +473,12 @@ def CreateDemands(M: 'TemoaModel'):
 def CreatePeakLoad(M: 'TemoaModel'):
     # TODO: This needs to be updated. It assumes an 8760 model and the demand name.
     for (r, p, c) in M.Demand.sparse_iterkeys():
-        if c != 'demand_elec':
-            continue
-        peak = max(value(M.DemandSpecificDistribution[r, s, d, c]) for s in M.time_season for d in M.time_of_day)
+        peak = max(
+            value(M.DemandSpecificDistribution[r, s, d, c]) /
+            (value(M.SegFrac[s, d]) * 8760)
+            for s in M.time_season
+            for d in M.time_of_day
+            )
         peakload = peak * M.Demand[r, p, c]
         M.PeakLoad[r, p] = peakload
 

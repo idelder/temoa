@@ -1168,24 +1168,24 @@ def StorageEnergy_Constraint(M: 'TemoaModel', r, p, s, d, t, v):
 
     stored_energy = charge - discharge
 
-    # This storage formulation allows stored energy to carry over through
-    # time of day and seasons, but must be zeroed out at the end of each period, i.e.,
-    # the last time slice of the last season must zero out
-    if d == M.time_of_day.last() and s == M.time_season.last():
-        d_prev = M.time_of_day.prev(d)
-        expr = M.V_StorageLevel[r, p, s, d_prev, t, v] + stored_energy == M.V_StorageInit[r, t, v]
+    # # This storage formulation allows stored energy to carry over through
+    # # time of day and seasons, but must be zeroed out at the end of each period, i.e.,
+    # # the last time slice of the last season must zero out
+    # if d == M.time_of_day.last() and s == M.time_season.last():
+    #     d_prev = M.time_of_day.prev(d)
+    #     expr = M.V_StorageLevel[r, p, s, d_prev, t, v] + stored_energy == M.V_StorageInit[r, t, v]
 
-    # First time slice of the first season (i.e., start of period), starts at StorageInit level
-    elif d == M.time_of_day.first() and s == M.time_season.first():
-        expr = M.V_StorageLevel[r, p, s, d, t, v] == M.V_StorageInit[r, t, v] + stored_energy
+    # # First time slice of the first season (i.e., start of period), starts at StorageInit level
+    # elif d == M.time_of_day.first() and s == M.time_season.first():
+    #     expr = M.V_StorageLevel[r, p, s, d, t, v] == M.V_StorageInit[r, t, v] + stored_energy
 
     # First time slice of any season that is NOT the first season
-    elif d == M.time_of_day.first():
+    if d == M.time_of_day.first():
         d_last = M.time_of_day.last()
-        s_prev = M.time_season.prev(s)
+        # s_prev = M.time_season.prev(s)
         expr = (
             M.V_StorageLevel[r, p, s, d, t, v]
-            == M.V_StorageLevel[r, p, s_prev, d_last, t, v] + stored_energy
+            == M.V_StorageLevel[r, p, s, d_last, t, v] + stored_energy
         )
 
     # Any time slice that is NOT covered above (i.e., not the time slice ending
@@ -1851,8 +1851,6 @@ Reformulated reserve margin constraint. This is used for a power system model, a
 returns the constraint for the peak load hour.
 
 """
-    if True:
-        return Constraint.Skip
 
     cap_avail = sum(
         value(M.CapacityCredit[r, p, t, v])
@@ -1898,7 +1896,8 @@ returns the constraint for the peak load hour.
 
 
     cap_target = value(M.PeakLoad[r, p]) * (1 + value(M.PlanningReserveMargin[r]))
-    return cap_avail >= cap_target
+    expr = cap_avail >= cap_target
+    return expr
 
 
 def EmissionLimit_Constraint(M: 'TemoaModel', r, p, e):

@@ -574,6 +574,10 @@ class HybridLoader:
         # RescourceBound
         # Not currently implemented
 
+        # PeakLoad
+        raw = cur.execute('SELECT region, period, peak_load FROM main.PeakLoad').fetchall()
+        load_element(M.PeakLoad, raw)
+
         # CapacityToActivity
         raw = cur.execute('SELECT region, tech, c2a FROM main.CapacityToActivity ').fetchall()
         load_element(M.CapacityToActivity, raw, self.viable_rt, (0, 1))
