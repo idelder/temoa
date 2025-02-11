@@ -483,7 +483,7 @@ class TemoaModel(AbstractModel):
         M.StorageDuration = Param(M.regions, M.tech_storage, default=4)
         # Initial storage charge level, expressed as fraction of full energy capacity.
         # If the parameter is not defined, the model optimizes the initial storage charge level.
-        M.StorageInit_rtv = Set(dimen=3, initialize=StorageInitIndices)
+        # M.StorageInit_rtv = Set(dimen=3, initialize=StorageInitIndices)
         # M.StorageInitFrac = Param(M.StorageInit_rtv)
 
         M.MyopicBaseyear = Param(default=0)
@@ -525,7 +525,7 @@ class TemoaModel(AbstractModel):
 
         M.StorageLevel_rpsdtv = Set(dimen=6, initialize=StorageVariableIndices)
         M.V_StorageLevel = Var(M.StorageLevel_rpsdtv, domain=NonNegativeReals)
-        M.V_StorageInit = Var(M.StorageInit_rtv, domain=NonNegativeReals)
+        # M.V_StorageInit = Var(M.StorageInit_rtv, domain=NonNegativeReals)
 
         # Derived decision variables
 
