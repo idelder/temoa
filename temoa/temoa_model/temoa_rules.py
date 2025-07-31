@@ -22,6 +22,7 @@ received this license file.  If not, see <http://www.gnu.org/licenses/>.
 from logging import getLogger
 from sys import stderr as SE
 from typing import TYPE_CHECKING
+from math import log2
 
 from pyomo.core import Var, Expression
 from pyomo.environ import Constraint, value
@@ -744,6 +745,118 @@ def fixed_or_variable_cost(
             * annuity_to_pv(GDR, cost_years)    # PV of annual costs over this period, discounted to period p
             * fv_to_pv(GDR, p - P_0)            # discounted from p to p_0
         )
+    
+
+def ETLPeriodCost_Constraint(M: 'TemoaModel', r, p, t):
+    """
+    Total investment cost up to period p under endogenous technological learning (ETL).
+    This formulation is mixed integer linear (computationally intensive) and should be used sparingly.
+    """
+
+    # Sorted list of legit vintages for this technology in this region
+    regions = gather_group_regions(M, r)
+    techs = gather_group_techs(M, t)
+
+    total_cost = 0
+    for n in M.etlSegmentCount[r, t]:
+
+        cap_lower, cap_upper, cost_lower, cost_upper = M.ETLSegment[r, t, n]
+
+        total_cost += (
+            (M.V_ETLCapacity[r, p, t, n] - value(cap_lower))
+            / (value(cap_upper) - value(cap_lower))
+            * (value(cost_upper) - value(cost_lower))
+            + M.V_ETLSegmentSwitch[r, p, t, n]
+            * value(cost_lower)
+            for n in M.etlSegmentCount[r, t]
+        )
+
+    sorted_periods = sorted(set(
+        _v
+        for _r in regions
+        for _t in techs
+        for _p, _v in M.processTechs[_r, _t]
+    ))
+    if p != sorted_periods[0]:
+        p_prev = sorted_periods[sorted_periods.index[p] - 1]
+        prev_cost = M.V_ETLPeriodCost[r, p_prev, t]
+        total_cost -= prev_cost
+
+    return M.V_ETLPeriodCost[r, p, t] == total_cost
+
+
+def ETLSegmentSwitch_Constraint(M: 'TemoaModel', r, p, t):
+    """
+    Enforces that costs for ETL are only being drawn for a single segment of the cost
+    curve in each period for each region-tech
+    """
+
+    total_segs = sum(
+        M.V_ETLSegmentSwitch[r, p, t, n]
+        for n in M.etlSegmentCount
+    )
+
+    return total_segs == 1
+
+
+def ETLCapacityLowerBound_Constraint(M: 'TemoaModel', r, p, t, n):
+    """
+    Enforces that the total deployed capacity is within the ETL segment currently
+    active for the period (lower bound)
+    """
+
+    min_cap = M.V_ETLSegmentSwitch[r, p, t, n] * value(M.ETLSegment[r, t, n][0])
+
+    capacity = M.V_ETLCapacity[r, p, t, n]
+
+    return capacity >= min_cap
+
+
+def ETLCapacityUpperBound_Constraint(M: 'TemoaModel', r, p, t, n):
+    """
+    Enforces that the total deployed capacity is within the ETL segment currently
+    active for the period (upper bound)
+    """
+
+    max_cap = M.V_ETLSegmentSwitch[r, p, t, n] * value(M.ETLSegment[r, t, n][1])
+
+    capacity = M.V_ETLCapacity[r, p, t, n]
+
+    return capacity <= max_cap
+
+
+def ETLCapacity_Constraint(M: 'TemoaModel', r, p, t):
+    """
+    Enforces that the deployed capacity for the process is the same as the 
+    segment capacity for the ETL formulation. Avoids us needing to mess with
+    other capacity variables in the the model.
+    """
+
+    # Sorted list of legit vintages for this technology in this region
+    regions = gather_group_regions(M, r)
+    techs = gather_group_techs(M, t)
+
+    cap_etl = sum(
+        M.V_ETLCapacity[r, p, t, n]
+        for n in M.etlSegmentCount
+    )
+
+    cap_deployed = sum(
+        value(M.ExistingCapacity[_r, _t, _v])
+        for _r in regions
+        for _t in techs
+        for _p, _v in M.processTechs[_r, _t]
+        if _v < M.time_optimize.first() and _v <= p
+    )
+    cap_deployed += sum(
+        M.V_NewCapacity[_r, _t, _v]
+        for _r in regions
+        for _t in techs
+        for _p, _v in M.processTechs[_r, _t]
+        if M.time_optimize.first() <= _v <= p
+    )
+
+    return cap_etl == cap_deployed
 
 
 def PeriodCost_rule(M: 'TemoaModel', p):
