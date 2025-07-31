@@ -1371,9 +1371,9 @@ def CreateETL(M: 'TemoaModel'):
     """
 
     for r, t, n in M.ETLSegment.sparse_iterkeys():
-        if (r, t) not in M.etlSegmentCount:
-            M.etlSegmentCount[r, t] = 0
-        M.etlSegmentCount[r, t] += 1
+        if (r, t) not in M.etlSegments:
+            M.etlSegments[r, t] = set()
+        M.etlSegments[r, t].add(n)
 
     
 # ---------------------------------------------------------------
@@ -1426,7 +1426,7 @@ def ETLCapacityIndices(M: 'TemoaModel'):
 def ETLPeriodCostIndices(M: 'TemoaModel'):
     return set(
         (r, p, t)
-        for r, p, t, _ in M.V_ETLCapacity_rptn
+        for r, p, t, _ in M.ETLCapacity_rptn
     )
 
 

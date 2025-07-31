@@ -753,12 +753,8 @@ def ETLPeriodCost_Constraint(M: 'TemoaModel', r, p, t):
     This formulation is mixed integer linear (computationally intensive) and should be used sparingly.
     """
 
-    # Sorted list of legit vintages for this technology in this region
-    regions = gather_group_regions(M, r)
-    techs = gather_group_techs(M, t)
-
     total_cost = 0
-    for n in M.etlSegmentCount[r, t]:
+    for n in M.etlSegments[r, t]:
 
         cap_lower, cap_upper, cost_lower, cost_upper = M.ETLSegment[r, t, n]
 
@@ -768,19 +764,7 @@ def ETLPeriodCost_Constraint(M: 'TemoaModel', r, p, t):
             * (value(cost_upper) - value(cost_lower))
             + M.V_ETLSegmentSwitch[r, p, t, n]
             * value(cost_lower)
-            for n in M.etlSegmentCount[r, t]
         )
-
-    sorted_periods = sorted(set(
-        _v
-        for _r in regions
-        for _t in techs
-        for _p, _v in M.processTechs[_r, _t]
-    ))
-    if p != sorted_periods[0]:
-        p_prev = sorted_periods[sorted_periods.index[p] - 1]
-        prev_cost = M.V_ETLPeriodCost[r, p_prev, t]
-        total_cost -= prev_cost
 
     return M.V_ETLPeriodCost[r, p, t] == total_cost
 
@@ -793,7 +777,7 @@ def ETLSegmentSwitch_Constraint(M: 'TemoaModel', r, p, t):
 
     total_segs = sum(
         M.V_ETLSegmentSwitch[r, p, t, n]
-        for n in M.etlSegmentCount
+        for n in M.etlSegments[r, t]
     )
 
     return total_segs == 1
@@ -838,26 +822,48 @@ def ETLCapacity_Constraint(M: 'TemoaModel', r, p, t):
 
     cap_etl = sum(
         M.V_ETLCapacity[r, p, t, n]
-        for n in M.etlSegmentCount
+        for n in M.etlSegments[r, t]
     )
 
-    cap_deployed = sum(
-        value(M.ExistingCapacity[_r, _t, _v])
+    rtv = set(
+        (_r, _t, _v)
         for _r in regions
         for _t in techs
         for _p, _v in M.processTechs[_r, _t]
         if _v < M.time_optimize.first() and _v <= p
     )
-    cap_deployed += sum(
-        M.V_NewCapacity[_r, _t, _v]
+    cap_deployed = sum(
+        value(M.ExistingCapacity[_r, _t, _v])
+        for _r, _t, _v in rtv
+    )
+    rtv = set(
+        (_r, _t, _v)
         for _r in regions
         for _t in techs
         for _p, _v in M.processTechs[_r, _t]
         if M.time_optimize.first() <= _v <= p
     )
+    cap_deployed += sum(
+        M.V_NewCapacity[_r, _t, _v]
+        for _r, _t, _v in rtv
+    )
 
     return cap_etl == cap_deployed
 
+# Sorted list of legit vintages for this technology in this region
+    # regions = gather_group_regions(M, r)
+    # techs = gather_group_techs(M, t)
+
+    # sorted_periods = sorted(set(
+    #     _v
+    #     for _r in regions
+    #     for _t in techs
+    #     for _p, _v in M.processTechs[_r, _t]
+    # ))
+    # if p != sorted_periods[0]:
+    #     p_prev = sorted_periods[sorted_periods.index(p) - 1]
+    #     prev_cost = M.V_ETLPeriodCost[r, p_prev, t]
+    #     total_cost -= prev_cost
 
 def PeriodCost_rule(M: 'TemoaModel', p):
     P_0 = min(M.time_optimize)
@@ -899,6 +905,21 @@ def PeriodCost_rule(M: 'TemoaModel', p):
         )
         for r, S_t, S_v in M.CostInvest.sparse_iterkeys()
         if S_v == p and M.isSurvivalCurveProcess[r, S_t, S_v]
+    )
+    loan_costs += sum(
+        loan_cost(
+            M.V_ETLPeriodCost[r, p, S_t] - M.V_ETLPeriodCost[r, p, S_t], # TODO not how it works
+            1,
+            value(M.LoanAnnualize[r, S_t, S_v]), # TODO HOWWWWWW
+            value(M.LoanLifetimeProcess[r, S_t, S_v]),
+            value(M.LifetimeProcess[r, S_t, S_v]),
+            P_0,
+            P_e,
+            GDR,
+            vintage=p,
+        )
+        for _r, _p, S_t in M.ETLPeriodCost_rpt
+        if _p == p
     )
 
     fixed_costs = sum(

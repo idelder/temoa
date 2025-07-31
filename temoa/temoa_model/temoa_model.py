@@ -113,7 +113,7 @@ class TemoaModel(AbstractModel):
         M.retirementPeriods = dict() # {(r, t, v): set(p)} periods in which a process can economically or naturally retire
         M.processVintages = dict()
         M.survivalCurvePeriods: dict[tuple, set] = dict() # {(r, t, v): set(p)} periods for which the process has a defined survival fraction
-        M.etlSegmentCount: dict[tuple, int] = dict() # {[r, t]: int} number of segments for each ETL curve
+        M.etlSegments: dict[tuple, set] = dict() # {[r, t]: int} number of segments for each ETL curve
         """current available (within lifespan) vintages {(r, p, t) : set(v)}"""
 
         M.baseloadVintages = dict()
@@ -420,7 +420,7 @@ class TemoaModel(AbstractModel):
         M.CostInvest = Param(M.CostInvest_rtv)
 
         M.ETLSegment_rtn = Set(within=M.regionalGlobalIndices * M.tech_or_group * Integers)
-        M.ETLSegment = Param(M.ETLSegment_rtn)
+        M.ETLSegment = Param(M.ETLSegment_rtn, domain=Any)
         M.initialize_ETL = BuildAction(rule=CreateETL)
 
         M.DefaultLoanRate = Param(domain=NonNegativeReals)
@@ -604,12 +604,12 @@ class TemoaModel(AbstractModel):
             M.CapacityAvailableVar_rpt, domain=NonNegativeReals, initialize=0
         )
 
-        M.V_ETLCapacity_rptn = Set(dimen=4, initialize=ETLCapacityIndices)
-        M.V_ETLCapacity = Var(M.V_ETLCapacity_rptn, domain=NonNegativeReals, initialize=0)
-        M.V_ETLSegmentSwitch = Var(M.V_ETLCapacity_rptn, domain=Binary, initialize=0)
+        M.ETLCapacity_rptn = Set(dimen=4, initialize=ETLCapacityIndices)
+        M.V_ETLCapacity = Var(M.ETLCapacity_rptn, domain=NonNegativeReals, initialize=0)
+        M.V_ETLSegmentSwitch = Var(M.ETLCapacity_rptn, domain=Binary, initialize=0)
 
-        M.V_ETLPeriodCost_rpt = Set(dimen=3, initialize=ETLPeriodCostIndices)
-        M.V_ETLPeriodCost = Var(M.V_ETLPeriodCost_rpt, domain=NonNegativeReals, initialize=0)
+        M.ETLPeriodCost_rpt = Set(dimen=3, initialize=ETLPeriodCostIndices)
+        M.V_ETLPeriodCost = Var(M.ETLPeriodCost_rpt, domain=NonNegativeReals, initialize=0)
 
         ################################################
         #              Objective Function              #
@@ -642,6 +642,26 @@ class TemoaModel(AbstractModel):
 
         M.CapacityAvailableByPeriodAndTechConstraint = Constraint(
             M.CapacityAvailableVar_rpt, rule=CapacityAvailableByPeriodAndTech_Constraint
+        )
+
+        M.ETLPeriodCostConstraint = Constraint(
+            M.ETLPeriodCost_rpt, rule=ETLPeriodCost_Constraint
+        )
+
+        M.ETLSegmentSwitchConstraint = Constraint(
+            M.ETLPeriodCost_rpt, rule=ETLSegmentSwitch_Constraint
+        )
+
+        M.ETLCapacityLowerBoundConstraint = Constraint(
+            M.ETLCapacity_rptn, rule=ETLCapacityLowerBound_Constraint
+        )
+
+        M.ETLCapacityUpperBoundConstraint = Constraint(
+            M.ETLCapacity_rptn, rule=ETLCapacityUpperBound_Constraint
+        )
+
+        M.ETLCapacityConstraint = Constraint(
+            M.ETLPeriodCost_rpt, rule=ETLCapacity_Constraint
         )
 
         # devnote: I think this constraint is redundant
