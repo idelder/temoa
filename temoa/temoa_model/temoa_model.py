@@ -27,6 +27,7 @@ from pyomo.environ import (
     Any,
     NonNegativeReals,
     Integers,
+    Binary,
     AbstractModel,
     BuildAction,
     Param,
@@ -112,6 +113,7 @@ class TemoaModel(AbstractModel):
         M.retirementPeriods = dict() # {(r, t, v): set(p)} periods in which a process can economically or naturally retire
         M.processVintages = dict()
         M.survivalCurvePeriods: dict[tuple, set] = dict() # {(r, t, v): set(p)} periods for which the process has a defined survival fraction
+        M.etlSegmentCount: dict[tuple, int] = dict() # {[r, t]: int} number of segments for each ETL curve
         """current available (within lifespan) vintages {(r, p, t) : set(v)}"""
 
         M.baseloadVintages = dict()
@@ -417,6 +419,10 @@ class TemoaModel(AbstractModel):
         M.CostInvest_rtv = Set(within=M.regionalIndices * M.tech_all * M.time_optimize)
         M.CostInvest = Param(M.CostInvest_rtv)
 
+        M.ETLSegment_rtn = Set(within=M.regionalGlobalIndices * M.tech_or_group * Integers)
+        M.ETLSegment = Param(M.ETLSegment_rtn)
+        M.initialize_ETL = BuildAction(rule=CreateETL)
+
         M.DefaultLoanRate = Param(domain=NonNegativeReals)
         M.LoanRate = Param(M.CostInvest_rtv, domain=NonNegativeReals, default=get_default_loan_rate)
         M.LoanAnnualize = Param(M.CostInvest_rtv, initialize=ParamLoanAnnualize_rule)
@@ -597,6 +603,13 @@ class TemoaModel(AbstractModel):
         M.V_CapacityAvailableByPeriodAndTech = Var(
             M.CapacityAvailableVar_rpt, domain=NonNegativeReals, initialize=0
         )
+
+        M.V_ETLCapacity_rptn = Set(dimen=4, initialize=ETLCapacityIndices)
+        M.V_ETLCapacity = Var(M.V_ETLCapacity_rptn, domain=NonNegativeReals, initialize=0)
+        M.V_ETLSegmentSwitch = Var(M.V_ETLCapacity_rptn, domain=Binary, initialize=0)
+
+        M.V_ETLPeriodCost_rpt = Set(dimen=3, initialize=ETLPeriodCostIndices)
+        M.V_ETLPeriodCost = Var(M.V_ETLPeriodCost_rpt, domain=NonNegativeReals, initialize=0)
 
         ################################################
         #              Objective Function              #

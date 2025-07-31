@@ -53,6 +53,7 @@ logger = getLogger(__name__)
 # the tables below are ones in which we might find regional groups which should be captured
 # to make the members of the RegionalGlobalIndices Set in the model.  They need to aggregated
 tables_with_regional_groups = {
+    'ETLSegment': 'region',
     'LimitAnnualCapacityFactor': 'region',
     'LimitEmission': 'region',
     'LimitSeasonalCapacityFactor': 'region',
@@ -850,6 +851,16 @@ class HybridLoader:
             raw = cur.execute('SELECT region, tech, vintage, cost FROM main.CostInvest ').fetchall()
         load_element(M.CostInvest, raw, self.viable_rtv, (0, 1, 2))
 
+        # ETLSegment
+        if self.table_exists('ETLSegment'):
+            raw = cur.execute(
+                'SELECT region, tech_or_group, segment, cap_lower, cap_upper, cost_lower, cost_upper '
+                'FROM main.ETLSegment '
+                'ORDER BY segment'
+            ).fetchall()
+            raw = self.tuple_values(raw, 3)
+            load_element(M.ETLSegment, raw)
+
         # CostVariable
         raw = self.raw_check_mi_period(mi, cur=cur, qry='SELECT region, period, tech, vintage, cost FROM main.CostVariable')
         load_element(M.CostVariable, raw, self.viable_rtv, (0, 2, 3))
@@ -1117,6 +1128,7 @@ class HybridLoader:
             M.CostInvest.name: M.CostInvest_rtv.name,
             M.CostEmission.name: M.CostEmission_rpe.name,
             M.Demand.name: M.DemandConstraint_rpc.name,
+            M.ETLSegment.name: M.ETLSegment_rtn.name,
             M.LimitEmission.name: M.LimitEmissionConstraint_rpe.name,
             M.LimitActivity.name: M.LimitActivityConstraint_rpt.name,
             M.LimitSeasonalCapacityFactor.name: M.LimitSeasonalCapacityFactorConstraint_rpst.name,

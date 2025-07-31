@@ -1363,6 +1363,18 @@ def CreateSurvivalCurve(M: 'TemoaModel'):
         ).format([rtv for rtv in rtv_interpolated])
         logger.info(msg)
 
+
+def CreateETL(M: 'TemoaModel'):
+    """
+    Amazingly, the order might not actually matter.
+    Just need the total number of segments in each ETL cost curve
+    """
+
+    for r, t, n in M.ETLSegment.sparse_iterkeys():
+        if (r, t) not in M.etlSegmentCount:
+            M.etlSegmentCount[r, t] = 0
+        M.etlSegmentCount[r, t] += 1
+
     
 # ---------------------------------------------------------------
 # Create sparse parameter indices.
@@ -1400,6 +1412,22 @@ def CostFixedIndices(M: 'TemoaModel'):
 
 def CostVariableIndices(M: 'TemoaModel'):
     return M.activeActivity_rptv
+
+
+def ETLCapacityIndices(M: 'TemoaModel'):
+    return set(
+        (r, v, t, n)
+        for r, t, n in M.ETLSegment.sparse_iterkeys()
+        for _r in gather_group_regions(M, r)
+        for _t in gather_group_techs(M, t)
+        for _, v in M.processTechs[_r, _t]
+    )
+
+def ETLPeriodCostIndices(M: 'TemoaModel'):
+    return set(
+        (r, p, t)
+        for r, p, t, _ in M.V_ETLCapacity_rptn
+    )
 
 
 # dev note:  appears superfluous...
