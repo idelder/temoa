@@ -22,7 +22,6 @@ received this license file.  If not, see <http://www.gnu.org/licenses/>.
 from logging import getLogger
 from sys import stderr as SE
 from typing import TYPE_CHECKING
-from math import log2
 
 from pyomo.core import Var, Expression
 from pyomo.environ import Constraint, value

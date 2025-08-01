@@ -1366,7 +1366,7 @@ def CreateSurvivalCurve(M: 'TemoaModel'):
 
 def CreateETL(M: 'TemoaModel'):
     """
-    Amazingly, the order might not actually matter.
+    The order doesn't matter
     Just need the total number of segments in each ETL cost curve
     """
 
