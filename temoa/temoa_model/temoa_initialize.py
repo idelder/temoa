@@ -1366,11 +1366,10 @@ def CreateSurvivalCurve(M: 'TemoaModel'):
 
 def CreateETL(M: 'TemoaModel'):
     """
-    The order doesn't matter
-    Just need the total number of segments in each ETL cost curve
+    Gather some information for ETL and put up some guard rails
     """
 
-    # N clusters for each ETL segment
+    # N clusters for each ETL segment, the order doesn't matter
     for r, t, n in M.ETLSegment.sparse_iterkeys():
         if (r, t) not in M.etlSegments:
             M.etlSegments[r, t] = set()
@@ -1428,6 +1427,35 @@ def CreateETL(M: 'TemoaModel'):
                     )
                     logger.error(msg)
                     raise ValueError(msg)
+                
+
+def add_etl_to_costinvest_rtv(M: 'TemoaModel'):
+    """
+    These ETL processes most likely do not have a CostInvest parameter, as
+    that is handled by the ETLSegment cost curve. As a result, they would
+    not have loan parameters either. This is necessary to ensure that ETL 
+    processes have loan parameters for discounting in the objective function.
+    """
+
+    rt = set(
+        (r, t)
+        for r, t, n in M.ETLSegment_rtn
+    )
+
+    for r, t in rt:
+
+        regions = gather_group_regions(M, r)
+        techs = gather_group_techs(M, t)
+
+        new_rtv = set(
+            (_r, _t, p)
+            for _r, _t in cross_product(regions, techs)
+            for p in M.time_optimize
+            if (_r, _t, p) in M.processPeriods
+        )
+
+        for rtv in new_rtv:
+            M.CostInvest_rtv.add(rtv)
 
     
 # ---------------------------------------------------------------

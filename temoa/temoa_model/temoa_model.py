@@ -417,11 +417,12 @@ class TemoaModel(AbstractModel):
         M.CostFixed_rptv = Set(dimen=4, initialize=CostFixedIndices)
         M.CostFixed = Param(M.CostFixed_rptv)
 
-        M.CostInvest_rtv = Set(within=M.regionalIndices * M.tech_all * M.time_optimize)
-        M.CostInvest = Param(M.CostInvest_rtv)
-
         M.ETLSegment_rtn = Set(within=M.regionalGlobalIndices * M.tech_or_group * Integers)
         M.ETLSegment = Param(M.ETLSegment_rtn, domain=Any)
+
+        M.CostInvest_rtv = Set(within=M.regionalIndices * M.tech_all * M.time_optimize)
+        M.etl_to_CostInvest_rtv = BuildAction(rule=add_etl_to_costinvest_rtv)
+        M.CostInvest = Param(M.CostInvest_rtv, default=0)
 
         M.DefaultLoanRate = Param(domain=NonNegativeReals)
         M.LoanRate = Param(M.CostInvest_rtv, domain=NonNegativeReals, default=get_default_loan_rate)
