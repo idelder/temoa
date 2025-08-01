@@ -745,125 +745,7 @@ def fixed_or_variable_cost(
             * annuity_to_pv(GDR, cost_years)    # PV of annual costs over this period, discounted to period p
             * fv_to_pv(GDR, p - P_0)            # discounted from p to p_0
         )
-    
 
-def ETLPeriodCost_Constraint(M: 'TemoaModel', r, p, t):
-    """
-    Total investment cost up to period p under endogenous technological learning (ETL).
-    This formulation is mixed integer linear (computationally intensive) and should be used sparingly.
-    """
-
-    total_cost = 0
-    for n in M.etlSegments[r, t]:
-
-        cap_lower, cap_upper, cost_lower, cost_upper = M.ETLSegment[r, t, n]
-
-        total_cost += (
-            (M.V_ETLCapacity[r, p, t, n] - value(cap_lower))
-            / (value(cap_upper) - value(cap_lower))
-            * (value(cost_upper) - value(cost_lower))
-            + M.V_ETLSegmentSwitch[r, p, t, n]
-            * value(cost_lower)
-        )
-
-    return M.V_ETLPeriodCost[r, p, t] == total_cost
-
-
-def ETLSegmentSwitch_Constraint(M: 'TemoaModel', r, p, t):
-    """
-    Enforces that costs for ETL are only being drawn for a single segment of the cost
-    curve in each period for each region-tech
-    """
-
-    total_segs = sum(
-        M.V_ETLSegmentSwitch[r, p, t, n]
-        for n in M.etlSegments[r, t]
-    )
-
-    return total_segs == 1
-
-
-def ETLCapacityLowerBound_Constraint(M: 'TemoaModel', r, p, t, n):
-    """
-    Enforces that the total deployed capacity is within the ETL segment currently
-    active for the period (lower bound)
-    """
-
-    min_cap = M.V_ETLSegmentSwitch[r, p, t, n] * value(M.ETLSegment[r, t, n][0])
-
-    capacity = M.V_ETLCapacity[r, p, t, n]
-
-    return capacity >= min_cap
-
-
-def ETLCapacityUpperBound_Constraint(M: 'TemoaModel', r, p, t, n):
-    """
-    Enforces that the total deployed capacity is within the ETL segment currently
-    active for the period (upper bound)
-    """
-
-    max_cap = M.V_ETLSegmentSwitch[r, p, t, n] * value(M.ETLSegment[r, t, n][1])
-
-    capacity = M.V_ETLCapacity[r, p, t, n]
-
-    return capacity <= max_cap
-
-
-def ETLCapacity_Constraint(M: 'TemoaModel', r, p, t):
-    """
-    Enforces that the deployed capacity for the process is the same as the 
-    segment capacity for the ETL formulation. Avoids us needing to mess with
-    other capacity variables in the the model.
-    """
-
-    # Sorted list of legit vintages for this technology in this region
-    regions = gather_group_regions(M, r)
-    techs = gather_group_techs(M, t)
-
-    cap_etl = sum(
-        M.V_ETLCapacity[r, p, t, n]
-        for n in M.etlSegments[r, t]
-    )
-
-    rtv = set(
-        (_r, _t, _v)
-        for _r in regions
-        for _t in techs
-        for _p, _v in M.processTechs[_r, _t]
-        if _v < M.time_optimize.first() and _v <= p
-    )
-    cap_deployed = sum(
-        value(M.ExistingCapacity[_r, _t, _v])
-        for _r, _t, _v in rtv
-    )
-    rtv = set(
-        (_r, _t, _v)
-        for _r in regions
-        for _t in techs
-        for _p, _v in M.processTechs[_r, _t]
-        if M.time_optimize.first() <= _v <= p
-    )
-    cap_deployed += sum(
-        M.V_NewCapacity[_r, _t, _v]
-        for _r, _t, _v in rtv
-    )
-
-    return cap_etl == cap_deployed
-
-# Sorted list of legit vintages for this technology in this region
-    # regions = gather_group_regions(M, r)
-    # techs = gather_group_techs(M, t)
-
-    # sorted_periods = sorted(set(
-    #     _v
-    #     for _r in regions
-    #     for _t in techs
-    #     for _p, _v in M.processTechs[_r, _t]
-    # ))
-    # if p != sorted_periods[0]:
-    #     p_prev = sorted_periods[sorted_periods.index(p) - 1]
-    #     prev_cost = M.V_ETLPeriodCost[r, p_prev, t]
-    #     total_cost -= prev_cost
 
 def PeriodCost_rule(M: 'TemoaModel', p):
     P_0 = min(M.time_optimize)
@@ -874,6 +756,7 @@ def PeriodCost_rule(M: 'TemoaModel', p):
     if value(M.MyopicDiscountingYear) != 0:
         P_0 = value(M.MyopicDiscountingYear)
 
+    # Normal technologies
     loan_costs = sum(
         loan_cost(
             M.V_NewCapacity[r, S_t, S_v],
@@ -889,6 +772,7 @@ def PeriodCost_rule(M: 'TemoaModel', p):
         for r, S_t, S_v in M.CostInvest.sparse_iterkeys()
         if S_v == p and not M.isSurvivalCurveProcess[r, S_t, S_v]
     )
+    # Survival curve processes
     loan_costs += sum(
         loan_cost_survival_curve(
             M,
@@ -906,20 +790,27 @@ def PeriodCost_rule(M: 'TemoaModel', p):
         for r, S_t, S_v in M.CostInvest.sparse_iterkeys()
         if S_v == p and M.isSurvivalCurveProcess[r, S_t, S_v]
     )
+    # Endogenous Technological Learning
     loan_costs += sum(
         loan_cost(
-            M.V_ETLPeriodCost[r, p, S_t] - M.V_ETLPeriodCost[r, p, S_t], # TODO not how it works
             1,
-            value(M.LoanAnnualize[r, S_t, S_v]), # TODO HOWWWWWW
-            value(M.LoanLifetimeProcess[r, S_t, S_v]),
-            value(M.LifetimeProcess[r, S_t, S_v]),
+            M.V_ETLPeriodCost[S_r, p, S_t],
+            value(M.LoanAnnualize[r0, t0, p]),
+            value(M.LoanLifetimeProcess[r0, t0, p]),
+            value(M.LifetimeProcess[r0, t0, p]),
             P_0,
             P_e,
             GDR,
             vintage=p,
         )
-        for _r, _p, S_t in M.ETLPeriodCost_rpt
-        if _p == p
+        for S_r, S_p, S_t in M.ETLPeriodCost_rpt
+        if S_p == p
+        # Assume that all r, t combos in the set have the same lifetimes and loan params
+        # This assumption is necessary as divvying up the costs would require either dividing
+        # by some capacity decision variable (breaks linearity) or multiplying an auxiliary
+        # variable by a capacity variable (quadratic)
+        for r0 in (gather_group_regions(M, S_r)[0],)
+        for t0 in (gather_group_techs(M, S_t)[0],)
     )
 
     fixed_costs = sum(
@@ -1066,6 +957,142 @@ def PeriodCost_rule(M: 'TemoaModel', p):
         loan_costs + fixed_costs + variable_costs + variable_costs_annual + period_emission_cost
     )
     return period_costs
+
+
+# ---------------------------------------------------------------
+# Handle investment costs with Endogenous Technological Learning
+# (ETL) This is a MILP formulation and computationally intensive
+# Follows implementation by TIMES
+# ---------------------------------------------------------------
+
+
+def ETLPeriodCost_Constraint(M: 'TemoaModel', r, p, t):
+    """
+    Total investment cost up to period p under endogenous technological learning (ETL).
+    This formulation is mixed integer linear (computationally intensive) and should be used sparingly.
+    """
+
+    # Get the cumulative cost up to total deployed capacity by period p
+    total_cost = 0
+    for n in M.etlSegments[r, t]:
+        
+        cap_lower, cap_upper, cost_lower, cost_upper = M.ETLSegment[r, t, n]
+
+        # Progression of capacity in the nth segment of the cumulative cost curve
+        f = (value(cost_upper) - value(cost_lower)) / (value(cap_upper) - value(cap_lower))
+
+        total_cost += (
+            f * M.V_ETLCapacity[r, p, t, n]
+            + M.V_ETLSegmentSwitch[r, p, t, n] * (value(cost_lower) - f * value(cap_lower))
+        )
+
+    # Subtract cumulative cost from previous total deployed capacity
+    prev_cost = 0
+    prev_vints = set(
+        v
+        for _p, v in M.processTechs[r, t]
+        if v < p
+    )
+
+    if len(prev_vints) > 0:
+
+        p_prev = max(prev_vints)
+
+        for n in M.etlSegments[r, t]:
+            
+            cap_lower, cap_upper, cost_lower, cost_upper = M.ETLSegment[r, t, n]
+
+            # Progression of capacity the nth segment
+            f = (value(cost_upper) - value(cost_lower)) / (value(cap_upper) - value(cap_lower))
+
+            prev_cost += (
+                f * M.V_ETLCapacity[r, p_prev, t, n]
+                + M.V_ETLSegmentSwitch[r, p_prev, t, n] * (value(cost_lower) - f * value(cap_lower))
+            )
+
+    return M.V_ETLPeriodCost[r, p, t] == total_cost - prev_cost
+
+
+def ETLSegmentSwitch_Constraint(M: 'TemoaModel', r, p, t):
+    """
+    Enforces that costs for ETL are only being drawn for a single segment of the cost
+    curve in each period for each region-tech
+    """
+
+    total_segs = sum(
+        M.V_ETLSegmentSwitch[r, p, t, n]
+        for n in M.etlSegments[r, t]
+    )
+
+    return total_segs == 1
+
+
+def ETLCapacityLowerBound_Constraint(M: 'TemoaModel', r, p, t, n):
+    """
+    Enforces that the total deployed capacity is within the ETL segment currently
+    active for the period (lower bound)
+    """
+
+    min_cap = M.V_ETLSegmentSwitch[r, p, t, n] * value(M.ETLSegment[r, t, n][0])
+
+    capacity = M.V_ETLCapacity[r, p, t, n]
+
+    return capacity >= min_cap
+
+
+def ETLCapacityUpperBound_Constraint(M: 'TemoaModel', r, p, t, n):
+    """
+    Enforces that the total deployed capacity is within the ETL segment currently
+    active for the period (upper bound)
+    """
+
+    max_cap = M.V_ETLSegmentSwitch[r, p, t, n] * value(M.ETLSegment[r, t, n][1])
+
+    capacity = M.V_ETLCapacity[r, p, t, n]
+
+    return capacity <= max_cap
+
+
+def ETLCapacity_Constraint(M: 'TemoaModel', r, p, t):
+    """
+    Enforces that the deployed capacity for the process is the same as the 
+    segment capacity for the ETL formulation. Avoids us needing to mess with
+    other capacity variables in the the model.
+    """
+
+    # Sorted list of legit vintages for this technology in this region
+    regions = gather_group_regions(M, r)
+    techs = gather_group_techs(M, t)
+
+    cap_etl = sum(
+        M.V_ETLCapacity[r, p, t, n]
+        for n in M.etlSegments[r, t]
+    )
+
+    rtv = set(
+        (_r, _t, _v)
+        for _r in regions
+        for _t in techs
+        for _p, _v in M.processTechs[_r, _t]
+        if _v < M.time_optimize.first() and _v <= p
+    )
+    cap_deployed = sum(
+        value(M.ExistingCapacity[_r, _t, _v])
+        for _r, _t, _v in rtv
+    )
+    rtv = set(
+        (_r, _t, _v)
+        for _r in regions
+        for _t in techs
+        for _p, _v in M.processTechs[_r, _t]
+        if M.time_optimize.first() <= _v <= p
+    )
+    cap_deployed += sum(
+        M.V_NewCapacity[_r, _t, _v]
+        for _r, _t, _v in rtv
+    )
+
+    return cap_deployed == cap_etl
 
 
 # ---------------------------------------------------------------

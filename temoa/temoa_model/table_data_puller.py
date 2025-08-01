@@ -369,6 +369,40 @@ def poll_cost_results(
                 {CostType.D_INVEST: model_loan_cost, CostType.INVEST: undiscounted_cost}
             )
 
+    for r, p, t in M.ETLPeriodCost_rpt:
+
+        cost = value(M.V_ETLPeriodCost[r, p, t])
+        if cost < epsilon:
+            continue
+
+        # gather details...
+        r0 = temoa_rules.gather_group_regions(M, r)[0]
+        t0 = temoa_rules.gather_group_techs(M, t)[0]
+        loan_life = value(LLN[r0, t0, p])
+        loan_rate = value(M.LoanRate[r0, t0, p])
+
+        model_loan_cost, undiscounted_cost = loan_costs(
+            loan_rate=loan_rate,
+            loan_life=loan_life,
+            capacity=1,
+            invest_cost=cost,
+            process_life=value(M.LifetimeProcess[r0, t0, p]),
+            p_0=p_0,
+            p_e=p_e,
+            global_discount_rate=GDR,
+            vintage=p,
+        )
+
+        # enter it into the entries table with period of cost = vintage (p=v)
+        if (r, p, t, p) in entries:
+            entries[r, p, t, p][CostType.D_INVEST] += model_loan_cost
+            entries[r, p, t, p][CostType.INVEST] += undiscounted_cost
+        else:
+            entries[r, p, t, p].update(
+                {CostType.D_INVEST: model_loan_cost, CostType.INVEST: undiscounted_cost}
+            )
+        
+
     for r, p, t, v in M.CostFixed.sparse_iterkeys():
         cap = value(M.V_Capacity[r, p, t, v])
         if abs(cap) < epsilon:
