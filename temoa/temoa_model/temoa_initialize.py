@@ -1375,6 +1375,48 @@ def CreateETL(M: 'TemoaModel'):
             M.etlSegments[r, t] = set()
         M.etlSegments[r, t].add(n)
 
+    # Check that costs and capacities are monotonically increasing
+    for (r, t), segs in M.etlSegments.items():
+        sorted_segs = sorted(segs)
+        for i, n in enumerate(sorted_segs):
+
+            seg = M.ETLSegment[r, t, n]
+
+            # Maybe there's a reason to do these but almost certainly a mistake.
+            # If someone wants to try this, they should have the skills to change
+            # this check
+            if not all((
+                seg[0] >= 0,
+                seg[1] >= 0,
+                seg[2] >= 0,
+                seg[3] >= 0,
+                seg[1] > seg[0],
+                seg[3] > seg[2],
+            )):
+                msg = (
+                    'Negative values or non-increasing segment bounds found '
+                    f'in ETLSegment table for {r, t, n}'
+                )
+                logger.error(msg)
+                raise ValueError(msg)
+
+            if i == 0:
+                continue
+
+            prev_seg = M.ETLSegment[r, t, sorted_segs[i-1]]
+
+            if not all ((
+                abs(seg[0] - prev_seg[1]) <= 0.001, # cost segment edges align
+                abs(seg[2] - prev_seg[3]) <= 0.001, # capacity segment edges align
+            )):
+                msg = (
+                    'Segments in ETLSegment table do not align on their bounds. This would '
+                    'leave gaps between cost segment and lead to infeasibility. Check '
+                    f'({r, t, sorted_segs[i-1]}) to ({r, t, n})'
+                )
+                logger.error(msg)
+                raise ValueError(msg)
+
     # Shorted some lines below in error checks
     life = M.LifetimeProcess
     loan_life = M.LoanLifetimeProcess
