@@ -111,9 +111,10 @@ class TemoaModel(AbstractModel):
         M.processReservePeriods = dict()
         M.processPeriods = dict() # {(r, t, v): set(p)}
         M.retirementPeriods = dict() # {(r, t, v): set(p)} periods in which a process can economically or naturally retire
-        M.processVintages = dict()
+        M.processVintages = dict() # {(r, p, t): set(v)}
         M.survivalCurvePeriods: dict[tuple, set] = dict() # {(r, t, v): set(p)} periods for which the process has a defined survival fraction
         M.etlSegments: dict[tuple, set] = dict() # {[r, t]: int} number of segments for each ETL curve
+        M.etlClusterProcess: dict[tuple, set[tuple]] = dict() # {[r_g, p, t_g]: set((r, t))} valid processes built in p for an ETL cluster
         """current available (within lifespan) vintages {(r, p, t) : set(v)}"""
 
         M.baseloadVintages = dict()
@@ -421,7 +422,6 @@ class TemoaModel(AbstractModel):
 
         M.ETLSegment_rtn = Set(within=M.regionalGlobalIndices * M.tech_or_group * Integers)
         M.ETLSegment = Param(M.ETLSegment_rtn, domain=Any)
-        M.initialize_ETL = BuildAction(rule=CreateETL)
 
         M.DefaultLoanRate = Param(domain=NonNegativeReals)
         M.LoanRate = Param(M.CostInvest_rtv, domain=NonNegativeReals, default=get_default_loan_rate)
@@ -609,6 +609,7 @@ class TemoaModel(AbstractModel):
         M.V_ETLSegmentSwitch = Var(M.ETLCapacity_rptn, domain=Binary, initialize=0)
 
         M.ETLPeriodCost_rpt = Set(dimen=3, initialize=ETLPeriodCostIndices)
+        M.initialize_ETL = BuildAction(rule=CreateETL)
         M.V_ETLPeriodCost = Var(M.ETLPeriodCost_rpt, domain=NonNegativeReals, initialize=0)
 
         ################################################

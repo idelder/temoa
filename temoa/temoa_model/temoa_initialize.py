@@ -1370,10 +1370,64 @@ def CreateETL(M: 'TemoaModel'):
     Just need the total number of segments in each ETL cost curve
     """
 
+    # N clusters for each ETL segment
     for r, t, n in M.ETLSegment.sparse_iterkeys():
         if (r, t) not in M.etlSegments:
             M.etlSegments[r, t] = set()
         M.etlSegments[r, t].add(n)
+
+    # Shorted some lines below in error checks
+    life = M.LifetimeProcess
+    loan_life = M.LoanLifetimeProcess
+    loan_rate = M.LoanRate
+
+    # Get a viable built process for each ETL period, for discounting parameters.
+    # Assumes that all r, t combos in the ETL cluster have the same lifetime and
+    # loan parameters. This is a necessary assumption to maintain linearity.
+    # Otherwise, our objective function would become quadratic as we try to
+    # index the ETL cluster price to deployed capacity for each tech.
+    for r, p, t in M.ETLPeriodCost_rpt:
+
+        regions = gather_group_regions(M, r)
+        techs = gather_group_techs(M, t)
+
+        for _r, _t in cross_product(regions, techs):
+            if (_r, _t, p) in M.processPeriods:
+                if (r, p, t) not in M.etlClusterProcess:
+                    M.etlClusterProcess[r, p, t] = _r, _t
+                    
+                # Check that the assumption holds
+                r0, t0 = M.etlClusterProcess[r, p, t]
+                if any((
+                    abs(life[r0, t0, p] - life[_r, _t, p]) >= 0.001,
+                    abs(loan_life[r0, t0, p] - loan_life[_r, _t, p]) >= 0.001,
+                    abs(loan_rate[r0, t0, p] - loan_rate[_r, _t, p]) >= 0.001,
+                )):
+                    msg = (
+                        'Processes assigned to the same ETLSegment cost curve must all have '
+                        'the same process lifetime, loan lifetime, and loan rate. These two '
+                        'processes do not match:\n '
+                        '({}, {}, {}) : lifetime = {}, loan life = {}, loan rate = {}\n'
+                        '({}, {}, {}) : lifetime = {}, loan life = {}, loan rate = {}'
+
+                    ).format(
+                        r0, t0, p,
+                        life[r0, t0, p], loan_life[r0, t0, p], loan_rate[r0, t0, p],
+                        _r, _t, p,
+                        life[_r, _t, p], loan_life[_r, _t, p], loan_rate[_r, _t, p]
+                    )
+                    logger.error(msg)
+                    raise ValueError(msg)
+
+                # Add a guard rail here
+                if M.isSurvivalCurveProcess[_r, _t, p]:
+                    msg = (
+                        'A process is using both survival curves and endogenous technological '
+                        'learning (ETL). For now, this is not allowed as the two features have '
+                        f'incompatible formulations: {_r, _t, p}'
+                    )
+                    logger.error(msg)
+                    raise ValueError(msg)
 
     
 # ---------------------------------------------------------------

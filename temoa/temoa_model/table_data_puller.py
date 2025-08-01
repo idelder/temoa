@@ -376,8 +376,7 @@ def poll_cost_results(
             continue
 
         # gather details...
-        r0 = temoa_rules.gather_group_regions(M, r)[0]
-        t0 = temoa_rules.gather_group_techs(M, t)[0]
+        r0, t0 = M.etlClusterProcess[r, p, t]
         loan_life = value(LLN[r0, t0, p])
         loan_rate = value(M.LoanRate[r0, t0, p])
 

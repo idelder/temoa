@@ -804,12 +804,11 @@ def PeriodCost_rule(M: 'TemoaModel', p):
         )
         for S_r, S_p, S_t in M.ETLPeriodCost_rpt
         if S_p == p
-        # Assume that all r, t combos in the set have the same lifetimes and loan params
-        # This assumption is necessary as divvying up the costs would require either dividing
-        # by some capacity decision variable (breaks linearity) or multiplying an auxiliary
-        # variable by a capacity variable (quadratic)
-        for r0 in (gather_group_regions(M, S_r)[0],)
-        for t0 in (gather_group_techs(M, S_t)[0],)
+        # Assumes that all r, t combos in the ETL cluster have the same lifetime and
+        # loan parameters. This is a necessary assumption to maintain linearity.
+        # Otherwise, our objective function would become quadratic as we try to
+        # index the ETL cluster price to deployed capacity for each tech.
+        for r0, t0 in (M.etlClusterProcess[S_r, p, S_t],)
     )
 
     fixed_costs = sum(
