@@ -107,4 +107,12 @@ test_vals = {
         # reduced 2025/07/21 after removing existing vintage V_NewCapacity indices
         ExpectedVals.VAR_COUNT: 101, 
     },
+    'etl': {
+        # added 2025/08/01 after the addition of endogenous technological learning
+        ExpectedVals.OBJ_VALUE: 61.3330,
+        ExpectedVals.EFF_DOMAIN_SIZE: 42,
+        ExpectedVals.EFF_INDEX_SIZE: 12,
+        ExpectedVals.CONSTR_COUNT: 178,
+        ExpectedVals.VAR_COUNT: 166, 
+    },
 }

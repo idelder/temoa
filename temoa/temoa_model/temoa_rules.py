@@ -638,6 +638,7 @@ def loan_cost(
             * annuity_to_pv(GDR, min(lifetime_process, P_e - vintage)) # PV of all reamortised costs (within planning horizon)
             * fv_to_pv(GDR, vintage - P_0)                  # finally, discounted from vintage year to P_0
         )
+
     return res
 
 

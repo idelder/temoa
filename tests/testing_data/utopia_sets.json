@@ -11269,6 +11269,9 @@
             "ELC"
         ]
     ],
+    "ETLCapacity_rptn": [],
+    "ETLPeriodCost_rpt": [],
+    "ETLSegment_rtn": [],
     "FlexVarAnnual_rpitvo": [],
     "FlexVar_rpsditvo": [],
     "FlowInStorage_rpsditvo": [

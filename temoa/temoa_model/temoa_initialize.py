@@ -1455,7 +1455,8 @@ def add_etl_to_costinvest_rtv(M: 'TemoaModel'):
         )
 
         for rtv in new_rtv:
-            M.CostInvest_rtv.add(rtv)
+            if rtv not in M.CostInvest:
+                M.CostInvest_rtv.add(rtv)
 
     
 # ---------------------------------------------------------------

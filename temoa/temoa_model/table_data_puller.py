@@ -379,13 +379,14 @@ def poll_cost_results(
         r0, t0 = M.etlClusterProcess[r, p, t]
         loan_life = value(LLN[r0, t0, p])
         loan_rate = value(M.LoanRate[r0, t0, p])
+        life = value(M.LifetimeProcess[r0, t0, p])
 
         model_loan_cost, undiscounted_cost = loan_costs(
             loan_rate=loan_rate,
             loan_life=loan_life,
             capacity=1,
             invest_cost=cost,
-            process_life=value(M.LifetimeProcess[r0, t0, p]),
+            process_life=life,
             p_0=p_0,
             p_e=p_e,
             global_discount_rate=GDR,
@@ -515,7 +516,6 @@ def loan_costs(
         vintage=vintage,
     )
     # Override the GDR to get the undiscounted value
-    global_discount_rate = 0
     undiscounted_cost = temoa_rules.loan_cost(
         capacity,
         invest_cost,
@@ -524,7 +524,7 @@ def loan_costs(
         lifetime_process=process_life,
         P_0=p_0,
         P_e=p_e,
-        GDR=global_discount_rate,
+        GDR=0,
         vintage=vintage,
     )
     return model_ic, undiscounted_cost
