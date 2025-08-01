@@ -328,6 +328,17 @@ CREATE TABLE IF NOT EXISTS EmissionEndOfLife
     notes       TEXT,
     PRIMARY KEY (region, emis_comm,  tech, vintage)
 );
+CREATE TABLE IF NOT EXISTS ETLSegment
+(
+	region TEXT,
+	tech_or_group TEXT,
+	segment INTEGER,
+	cap_lower REAL,
+	cap_upper REAL,
+	cost_lower REAL,
+	cost_upper REAL,
+	PRIMARY KEY (region, tech_or_group, segment)
+);
 CREATE TABLE IF NOT EXISTS ExistingCapacity
 (
     region   TEXT,
