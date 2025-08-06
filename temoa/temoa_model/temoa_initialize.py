@@ -1411,7 +1411,7 @@ def CreateETL(M: 'TemoaModel'):
             )):
                 msg = (
                     'Segments in ETLSegment table do not align on their bounds. This would '
-                    'leave gaps between cost segment and lead to infeasibility. Check '
+                    'leave gaps between cost segments and lead to infeasibility. Check '
                     f'({r, t, sorted_segs[i-1]}) to ({r, t, n})'
                 )
                 logger.error(msg)
@@ -1450,7 +1450,6 @@ def CreateETL(M: 'TemoaModel'):
                         'processes do not match:\n '
                         '({}, {}, {}) : lifetime = {}, loan life = {}, loan rate = {}\n'
                         '({}, {}, {}) : lifetime = {}, loan life = {}, loan rate = {}'
-
                     ).format(
                         r0, t0, p,
                         life[r0, t0, p], loan_life[r0, t0, p], loan_rate[r0, t0, p],
