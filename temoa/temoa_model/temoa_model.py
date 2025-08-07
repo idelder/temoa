@@ -113,8 +113,8 @@ class TemoaModel(AbstractModel):
         M.retirementPeriods = dict() # {(r, t, v): set(p)} periods in which a process can economically or naturally retire
         M.processVintages = dict() # {(r, p, t): set(v)}
         M.survivalCurvePeriods: dict[tuple, set] = dict() # {(r, t, v): set(p)} periods for which the process has a defined survival fraction
-        M.etlSegments: dict[tuple, set] = dict() # {[r, t]: int} number of segments for each ETL curve
-        M.etlClusterProcess: dict[tuple, set[tuple]] = dict() # {[r_g, p, t_g]: set((r, t))} valid processes built in p for an ETL cluster
+        M.etlSegments: dict[tuple, set] = dict() # {(r, t): set(n)} integer segment IDs for each ETL curve
+        M.etlClusterProcess: dict[tuple, set[tuple]] = dict() # {(r_g, p, t_g): set((r, t))} valid processes built in p for an ETL cluster
         """current available (within lifespan) vintages {(r, p, t) : set(v)}"""
 
         M.baseloadVintages = dict()
