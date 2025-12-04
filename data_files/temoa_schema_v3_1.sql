@@ -39,7 +39,8 @@ CREATE TABLE IF NOT EXISTS OutputObjective
 (
     scenario          TEXT,
     objective_name    TEXT,
-    total_system_cost REAL
+    total_system_cost REAL,
+	PRIMARY KEY (scenario, objective_name)
 );
 CREATE TABLE IF NOT EXISTS SeasonLabel
 (
@@ -713,7 +714,7 @@ CREATE TABLE IF NOT EXISTS OutputCurtailment
     period      INTEGER
         REFERENCES TimePeriod (period),
     season      TEXT
-        REFERENCES TimePeriod (period),
+        REFERENCES SeasonLabel (season),
     tod         TEXT
         REFERENCES TimeOfDay (tod),
     input_comm  TEXT
@@ -878,6 +879,7 @@ CREATE TABLE IF NOT EXISTS ReserveCapacityDerate
     tech    TEXT
         REFERENCES Technology (tech),
     vintage INTEGER,
+		REFERENCES TimePeriod (period),
     factor  REAL,
     notes   TEXT,
     PRIMARY KEY (region, period, season, tech, vintage),
