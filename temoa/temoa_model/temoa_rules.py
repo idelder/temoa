@@ -985,11 +985,16 @@ def ETLPeriodCost_Constraint(M: 'TemoaModel', r, p, t):
             + M.V_ETLSegmentSwitch[r, p, t, n] * (value(cost_lower) - f * value(cap_lower))
         )
 
+    regions = gather_group_regions(M, r)
+    techs = gather_group_techs(M, t)
+
     # Subtract cumulative cost from previous total deployed capacity
     prev_cost = 0
     prev_vints = set(
         v
-        for _p, v in M.processTechs[r, t]
+        for _r in regions
+        for _t in techs
+        for _p, v in M.processTechs[_r, _t]
         if v < p
     )
 
