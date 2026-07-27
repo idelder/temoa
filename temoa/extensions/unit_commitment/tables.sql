@@ -1,20 +1,22 @@
 CREATE TABLE IF NOT EXISTS unit_commitment
 (
-    region               TEXT    NOT NULL,
-    tech                 TEXT    NOT NULL,
-    unit_capacity        REAL    NOT NULL,
-    min_output_fraction  REAL    NOT NULL DEFAULT 0.0,
-    max_output_fraction  REAL    NOT NULL DEFAULT 1.0,
-    min_up_time_hours    INTEGER NOT NULL DEFAULT 0,
-    min_down_time_hours  INTEGER NOT NULL DEFAULT 0,
-    linearized           INTEGER NOT NULL DEFAULT 0,
-    units                TEXT,
-    notes                TEXT,
+    region                      TEXT    NOT NULL,
+    tech                        TEXT    NOT NULL,
+    unit_capacity               REAL    NOT NULL,
+    min_output_fraction         REAL    NOT NULL DEFAULT 0.0,
+    max_output_fraction         REAL    NOT NULL DEFAULT 1.0,
+    min_up_time_hours           INTEGER NOT NULL DEFAULT 0,
+    min_down_time_hours         INTEGER NOT NULL DEFAULT 0,
+    planned_outage_fraction     REAL NOT NULL DEFAULT 0.0,
+    linearized                  INTEGER NOT NULL DEFAULT 0,
+    units                       TEXT,
+    notes                       TEXT,
     CHECK (unit_capacity > 0),
     CHECK (0 <= min_output_fraction AND min_output_fraction <= 1),
     CHECK (0 < max_output_fraction AND max_output_fraction <= 1),
     CHECK (min_up_time_hours >= 0),
     CHECK (min_down_time_hours >= 0),
+    CHECK (0 <= planned_outage_fraction AND planned_outage_fraction <= 1),
     CHECK (linearized IN (0, 1)),
     PRIMARY KEY (region, tech)
 );
@@ -63,6 +65,7 @@ CREATE TABLE IF NOT EXISTS output_unit_commitment
     online_cap                      REAL,
     start_cap                       REAL,
     stop_cap                        REAL,
+    planned_outage_cap              REAL,
     units                           TEXT,
     PRIMARY KEY (scenario, region, sector, period, season, tod, tech, vintage)
 );

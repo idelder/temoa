@@ -58,6 +58,15 @@ def initialize_unit_commitment(model: UnitCommitmentModel) -> None:
     # Override get_available_output with the UC-aware version for this run.
     utils.available_output_function = uc_available_output
 
+    if model.time_sequencing.first() != 'consecutive_days' and any(
+        value(model.uc_planned_outage_rate[r, t]) > 0
+        for r, t in model.uc_planned_outage_rate.sparse_keys()
+    ):
+        logger.warning(
+            'Unit commitment planned outage rates are ignored when time_sequencing '
+            'mode is not consecutive_days.'
+        )
+
     # Annual techs cant use unit commitment as their flows are not flexible
     bad_techs = {t for _, t in model.uc_unit_capacity.sparse_keys() if t in model.tech_annual}
     if bad_techs:
@@ -104,17 +113,14 @@ def initialize_unit_commitment(model: UnitCommitmentModel) -> None:
             model.uc_backslices[s, d, hb] = set()
             _s, _d = s, d
             _hours = float(hb)
-            i = 0  # Some loop safety
-            while i + 1 < len(model.time_next):
+            for _ in range(len(model.time_next) - 1):
                 s_prev, d_prev = time_prev[_s, _d]
-                if s_prev == _s and d_prev == _d:
+                if s_prev == s and d_prev == d:
                     msg = (
                         'When finding relevant past time slices for min up/downtime '
                         'constraints, looped back to the same time slice. This would '
-                        'likely cause infeasibility and is not supported.  If the '
-                        'min up/downtime is longer than a season, try instead '
-                        'flagging the technology as production baseload "pb" and '
-                        'setting min up/down times to zero to skip the constraints. '
+                        'likely cause infeasibility and is not supported.  Up/down '
+                        'times may be too long for the current time sequencing method.'
                     )
                     logger.error(msg)
                     raise ValueError(msg)
@@ -122,9 +128,60 @@ def initialize_unit_commitment(model: UnitCommitmentModel) -> None:
                 _hours -= elapsed
                 if _hours < -epsilon:
                     break  # too far back (with some rounding buffer) so ignore
-                i += 1
                 model.uc_backslices[s, d, hb].add((s_prev, d_prev))
                 _s, _d = s_prev, d_prev
+
+    if model.time_sequencing.first() != 'consecutive_days':
+        return
+
+    hours_back = {
+        int(value(model.uc_planned_outage_rate[r, t]) * model.days_per_period * 24)
+        for (r, t) in model.uc_planned_outage_rate.sparse_keys()
+    }
+
+    # Invert the time next sequence to start...
+    seas_prev = {
+        s: model.time_season.prev(s) for s in model.time_season if s != model.time_season.first()
+    }
+    seas_prev[model.time_season.first()] = model.time_season.last()
+    # Then back down the chain until the next timeslice back is irrelevant
+    for hb in hours_back:
+        for s, d in time_prev:
+            model.uc_backseasons[s, d, hb] = set()
+            _s, _d = s, d
+            _hours = float(hb)
+            for _ in range(len(model.time_season) + len(model.time_of_day) - 1):
+                if _d == model.time_of_day.first():
+                    s_prev, d_prev = seas_prev[_s], _d
+                    _hours -= model.segment_fraction_per_season[_s] * 24 * model.days_per_period
+                else:
+                    s_prev, d_prev = time_prev[_s, _d]
+                    _hours -= tod_elapsed_hours(model, d_prev, _d)
+                if s_prev == s and d_prev == _d:
+                    msg = (
+                        'When finding relevant past time slices for planned outage periods, '
+                        'looped back to the same time slice. Likely code bug. '
+                        'Hours back: {} from slice: ({}, {})'
+                    )
+                    logger.error(msg.format(hb, s, d))
+                    raise ValueError(msg.format(hb, s, d))
+                if _hours < -epsilon:
+                    break  # too far back (with some rounding buffer) so ignore
+                if d_prev == model.time_of_day.first():
+                    model.uc_backseasons[s, d, hb].add(s_prev)
+                _s, _d = s_prev, d_prev
+
+
+def uc_capacity_indices(
+    model: UnitCommitmentModel,
+) -> set[tuple[Region, Period, Technology, Vintage]]:
+    """All (r, p, t, v) indices for unit commitment constraints."""
+    return {
+        (r, p, t, v)
+        for r, t in model.uc_unit_capacity.sparse_keys()
+        for p in model.time_optimize
+        for v in model.process_vintages.get((r, p, t), [])
+    }
 
 
 def uc_constraint_indices(
@@ -133,11 +190,37 @@ def uc_constraint_indices(
     """All (r, p, s, d, t, v) indices for unit commitment constraints."""
     return {
         (r, p, s, d, t, v)
-        for r, t in model.uc_unit_capacity.sparse_keys()
-        for p in model.time_optimize
-        for v in model.process_vintages.get((r, p, t), [])
+        for r, p, t, v in model.uc_indices_rptv
         for s in model.time_season
         for d in model.time_of_day
+    }
+
+
+def uc_planned_outage_annual_indices(
+    model: UnitCommitmentModel,
+) -> set[tuple[Region, Period, Technology, Vintage]]:
+    """For summation over each planning period."""
+    if model.time_sequencing.first() != 'consecutive_days':
+        return set()
+    return {
+        (r, p, t, v)
+        for r, t in model.uc_planned_outage_rate.sparse_keys()
+        if value(model.uc_planned_outage_rate[r, t]) > 0
+        for p in model.time_optimize
+        for v in model.process_vintages.get((r, p, t), [])
+    }
+
+
+def uc_planned_outage_indices(
+    model: UnitCommitmentModel,
+) -> set[tuple[Region, Period, Season, Technology, Vintage]]:
+    """To avoid bloating the model, planned outage must begin at the start
+    of a season, and so planned outages are indexed by season but not time
+    of day."""
+    return {
+        (r, p, s, t, v)
+        for r, p, t, v in model.uc_planned_outage_indices_rptv
+        for s in model.time_season
     }
 
 
@@ -259,6 +342,22 @@ def uc_available_output(
 # ---------------------------------------------------------------------------
 
 
+def uc_total_units_upper_constraint(
+    model: UnitCommitmentModel, r: Region, p: Period, t: Technology, v: Vintage
+) -> ExprLike:
+    if value(model.uc_linearized[r, t]):
+        return model.v_uc_total_units[r, p, t, v] == _total_units(model, r, p, t, v)
+    return model.v_uc_total_units[r, p, t, v] <= _total_units(model, r, p, t, v)
+
+
+def uc_total_units_lower_constraint(
+    model: UnitCommitmentModel, r: Region, p: Period, t: Technology, v: Vintage
+) -> ExprLike:
+    if value(model.uc_linearized[r, t]):
+        return Constraint.Skip
+    return model.v_uc_total_units[r, p, t, v] >= _total_units(model, r, p, t, v) - 1
+
+
 def uc_online_upper_constraint(
     model: UnitCommitmentModel,
     r: Region,
@@ -275,7 +374,7 @@ def uc_online_upper_constraint(
 
         \textbf{UCN}_{r,p,s,d,t,v} \le \frac{\textbf{CAP}_{r,p,t,v}}{UC_{r,t}}
     """
-    return model.v_uc_online[r, p, s, d, t, v] <= _total_units(model, r, p, t, v)
+    return model.v_uc_online[r, p, s, d, t, v] <= model.v_uc_total_units[r, p, t, v]
 
 
 def uc_started_upper_tightening_constraint(
@@ -297,7 +396,7 @@ def uc_started_upper_tightening_constraint(
         \le \frac{\textbf{CAP}_{r,p,t,v}}{UC_{r,t}}
           - \textbf{UCN}_{r,p,s,d,t,v}
     """
-    offline = _total_units(model, r, p, t, v) - model.v_uc_online[r, p, s, d, t, v]
+    offline = model.v_uc_total_units[r, p, t, v] - model.v_uc_online[r, p, s, d, t, v]
     return model.v_uc_started[r, p, s, d, t, v] <= offline
 
 
@@ -368,7 +467,7 @@ def uc_min_output_constraint(
             \cdot \textbf{UCN}_{r,p,s,d,t,v}
     """
     min_frac = value(model.uc_min_output_fraction[r, t])
-    if min_frac <= 0.0:
+    if not min_frac:
         return Constraint.Skip
 
     output = _flow_out_sum(model, r, p, s, d, t, v)
@@ -401,6 +500,8 @@ def uc_min_up_time_constraint(
         \le \textbf{UCN}_{r,p,s,d,t,v}
     """
     hours_back = int(value(model.uc_min_up_time_hours[r, t]))
+    if not hours_back:
+        return Constraint.Skip
     started_sum = quicksum(
         model.v_uc_started[r, p, _s, _d, t, v] for _s, _d in model.uc_backslices[s, d, hours_back]
     )
@@ -440,12 +541,48 @@ def uc_min_down_time_constraint(
         :code:`segment_fraction` data are rounded imprecisely, the window boundary may be
         mis-classified by one time slice.
     """
-    hours_back = int(value(model.uc_min_down_time_hours[r, t]))
-    stopped_sum = quicksum(
-        model.v_uc_stopped[r, p, _s, _d, t, v] for _s, _d in model.uc_backslices[s, d, hours_back]
+    down_hours = int(value(model.uc_min_down_time_hours[r, t]))
+    planned_outage_hours = int(
+        value(model.uc_planned_outage_rate[r, t]) * model.days_per_period * 24
     )
-    offline = _total_units(model, r, p, t, v) - model.v_uc_online[r, p, s, d, t, v]
+    if not down_hours and not planned_outage_hours:
+        return Constraint.Skip
+    stopped_sum = quicksum(
+        model.v_uc_stopped[r, p, _s, _d, t, v] for _s, _d in model.uc_backslices[s, d, down_hours]
+    )
+    if model.time_sequencing.first() == 'consecutive_days':
+        stopped_sum += quicksum(
+            model.v_uc_planned_outage[r, p, _s, t, v]
+            for _s in model.uc_backseasons[s, d, planned_outage_hours]
+            if (_s, model.time_of_day.first()) not in model.uc_backslices[s, d, down_hours]
+        )
+    offline = model.v_uc_total_units[r, p, t, v] - model.v_uc_online[r, p, s, d, t, v]
     return offline >= stopped_sum
+
+
+def uc_planned_outage_stoppage_constraint(
+    model: UnitCommitmentModel,
+    r: Region,
+    p: Period,
+    s: Season,
+    t: Technology,
+    v: Vintage,
+) -> ExprLike:
+    r"""Forces units to be stopped for planned outage."""
+    stopped = model.v_uc_stopped[r, p, s, model.time_of_day.first(), t, v]
+    return stopped >= model.v_uc_planned_outage[r, p, s, t, v]
+
+
+def uc_planned_outage_constraint(
+    model: UnitCommitmentModel,
+    r: Region,
+    p: Period,
+    t: Technology,
+    v: Vintage,
+) -> ExprLike:
+    r"""All extant units undergo maintenance in each planning period."""
+    outage_sum = quicksum(model.v_uc_planned_outage[r, p, s, t, v] for s in model.time_season)
+    return outage_sum >= model.v_uc_total_units[r, p, t, v]
 
 
 def _rampable_activity(

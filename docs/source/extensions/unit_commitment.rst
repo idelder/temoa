@@ -74,6 +74,15 @@ ramp tables.
    :code:`linearized = 1` in the :code:`unit_commitment` table for a
    particular technology to keep those variables continuous (LP relaxation).
 
+.. warning::
+
+   **If not linearized, net capacity should be divisible by** :code:`unit_capacity`.
+   Any process with a non-integer number of units will have the residual
+   capacity treated as always offline. For processes with net capacity less than
+   :code:`unit_capacity`, there will be zero available units. This also applies to
+   technologies whose net capacity is reduced by the :code:`process_life_fraction`
+   adjustment for mid-period retirement.
+
 Overview
 --------
 

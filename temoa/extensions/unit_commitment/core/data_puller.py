@@ -31,14 +31,14 @@ class UCI(NamedTuple):
     v: Vintage
 
 
-def poll_commitment_results(model: TemoaModel) -> dict[UCI, tuple[float, float, float]]:
+def poll_commitment_results(model: TemoaModel) -> dict[UCI, tuple[float, float, float, float]]:
     """
     Poll the start, stop, and online capacity for all unit commitment process,
     periods, and time slices, and add them to the output_unit_commitment table.
     """
     model = cast('UnitCommitmentModel', model)
 
-    results: dict[UCI, tuple[float, float, float]] = {}
+    results: dict[UCI, tuple[float, float, float, float]] = {}
     for r, p, s, d, t, v in model.uc_indices_rpsdtv:
         unit_cap = value(model.uc_unit_capacity[r, t])
 
@@ -46,8 +46,18 @@ def poll_commitment_results(model: TemoaModel) -> dict[UCI, tuple[float, float, 
         started = unit_cap * value(model.v_uc_started[r, p, s, d, t, v])
         stopped = unit_cap * value(model.v_uc_stopped[r, p, s, d, t, v])
 
-        if online > 0 or started > 0 or stopped > 0:
-            results[UCI(r, p, s, d, t, v)] = (online, started, stopped)
+        planned_outage = 0.0
+
+        if all(
+            (
+                d == model.time_of_day.first(),
+                (r, p, s, t, v) in model.uc_planned_outage_indices_rpstv,
+                value(model.uc_planned_outage_rate[r, t]) > 0.0,
+            )
+        ):
+            planned_outage = unit_cap * value(model.v_uc_planned_outage[r, p, s, t, v])
+
+        results[UCI(r, p, s, d, t, v)] = (online, started, stopped, planned_outage)
     return results
 
 
@@ -62,8 +72,8 @@ def write_uc_results(
     unit_prop = writer.unit_propagator
     records = []
 
-    for uci, (online, started, stopped) in results.items():
-        if all(abs(v) < epsilon for v in (online, started, stopped)):
+    for uci, (online, started, stopped, planned_outage) in results.items():
+        if all(abs(v) < epsilon for v in (online, started, stopped, planned_outage)):
             continue
         row = {
             'scenario': scenario,
@@ -77,6 +87,7 @@ def write_uc_results(
             'online_cap': online,
             'start_cap': started,
             'stop_cap': stopped,
+            'planned_outage_cap': planned_outage,
             'units': unit_prop.get_capacity_units(uci.t) if unit_prop else None,
         }
         records.append(row)

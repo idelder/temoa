@@ -45,6 +45,11 @@ def build_manifest_items(model: TemoaModel) -> list[LoadItem]:
             **uc,
         ),
         LoadItem(
+            component=m.uc_planned_outage_rate,
+            columns=['region', 'tech', 'planned_outage_rate'],
+            **uc,
+        ),
+        LoadItem(
             component=m.uc_linearized,
             columns=['region', 'tech', 'linearized'],
             **uc,
