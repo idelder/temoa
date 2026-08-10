@@ -389,8 +389,7 @@ class TemoaModel(AbstractModel):
         self.demand = Param(self.demand_constraint_rpc)
 
         # Dev Note:  This parameter is currently NOT implemented.  Preserved for later refactoring
-        # limit_resource IS implemented but sums cumulatively for a technology rather than
-        # resource commodity
+        # Cumulative activity limits apply to technologies rather than resource commodities.
         # M.ResourceConstraint_rpr = Set(within=M.regions * M.time_optimize * M.commodity_physical)
         # M.resource_bound = Param(M.ResourceConstraint_rpr)
 
@@ -605,10 +604,21 @@ class TemoaModel(AbstractModel):
         )
         self.limit_new_capacity = Param(self.limit_new_capacity_constraint_rtv)
 
-        self.limit_resource_constraint_rt = Set(
+        self.limit_activity_cumulative_constraint_rt = Set(
             within=self.regional_global_indices * self.tech_or_group * self.operator
         )
-        self.limit_resource = Param(self.limit_resource_constraint_rt)
+        self.limit_activity_cumulative = Param(self.limit_activity_cumulative_constraint_rt)
+        self.past_activity_result = Param(
+            self.regional_global_indices, self.tech_or_group, default=0
+        )
+
+        self.limit_new_capacity_cumulative_constraint_rt = Set(
+            within=self.regional_global_indices * self.tech_or_group * self.operator
+        )
+        self.limit_new_capacity_cumulative = Param(self.limit_new_capacity_cumulative_constraint_rt)
+        self.past_new_capacity_result = Param(
+            self.regional_global_indices, self.tech_or_group, default=0
+        )
 
         self.limit_activity_constraint_rpt = Set(
             within=self.regional_global_indices
@@ -654,6 +664,13 @@ class TemoaModel(AbstractModel):
             * self.operator
         )
         self.limit_emission = Param(self.limit_emission_constraint_rpe)
+        self.limit_emission_cumulative_constraint_re = Set(
+            within=self.regional_global_indices * self.commodity_emissions * self.operator
+        )
+        self.limit_emission_cumulative = Param(self.limit_emission_cumulative_constraint_re)
+        self.past_emission_result = Param(
+            self.regional_global_indices, self.commodity_emissions, default=0
+        )
         self.emission_activity_reitvo = Set(dimen=6, initialize=emissions.emission_activity_indices)
         self.emission_activity = Param(self.emission_activity_reitvo)
 
@@ -984,6 +1001,10 @@ class TemoaModel(AbstractModel):
         self.limit_emission_constraint = Constraint(
             self.limit_emission_constraint_rpe, rule=limits.limit_emission_constraint
         )
+        self.limit_emission_cumulative_constraint = Constraint(
+            self.limit_emission_cumulative_constraint_re,
+            rule=limits.limit_emission_cumulative_constraint,
+        )
         self.progress_marker_7 = BuildAction(
             ['Starting LimitGrowth and Activity Constraints'], rule=progress_check
         )
@@ -1004,6 +1025,10 @@ class TemoaModel(AbstractModel):
         self.limit_new_capacity_constraint = Constraint(
             self.limit_new_capacity_constraint_rtv, rule=limits.limit_new_capacity_constraint
         )
+        self.limit_new_capacity_cumulative_constraint = Constraint(
+            self.limit_new_capacity_cumulative_constraint_rt,
+            rule=limits.limit_new_capacity_cumulative_constraint,
+        )
 
         self.limit_capacity_share_constraint = Constraint(
             self.limit_capacity_share_constraint_rpgg, rule=limits.limit_capacity_share_constraint
@@ -1022,8 +1047,9 @@ class TemoaModel(AbstractModel):
             ['Starting Limit Capacity and Tech Split Constraints'], rule=progress_check
         )
 
-        self.limit_resource_constraint = Constraint(
-            self.limit_resource_constraint_rt, rule=limits.limit_resource_constraint
+        self.limit_activity_cumulative_constraint = Constraint(
+            self.limit_activity_cumulative_constraint_rt,
+            rule=limits.limit_activity_cumulative_constraint,
         )
 
         self.limit_annual_capacity_factor_constraint_rptvo = Set(

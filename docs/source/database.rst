@@ -96,14 +96,17 @@ recommend that you populate input tables in the following order:
 
 
 **Group 4: parameters used to define constraints within Temoa** (non-exhaustive)
-  * limit_activity
-  * limit_capacity
-  * limit_emission
-  * limit_growth_capacity
-  * limit_new_capacity
-  * limit_resource
-  * limit_tech_input_split
-  * limit_tech_output_split
+
+* limit_activity
+* limit_capacity
+* limit_emission
+* limit_growth_capacity
+* limit_new_capacity
+* limit_activity_cumulative
+* limit_new_capacity_cumulative
+* limit_emission_cumulative
+* limit_tech_input_split
+* limit_tech_output_split
 
 
 ---------------------------------------
@@ -151,7 +154,9 @@ Supported tables:
 
 * limit_annual_capacity_factor
 * limit_seasonal_capacity_factor
-* limit_resource
+* limit_activity_cumulative
+* limit_new_capacity_cumulative
+* limit_emission_cumulative
 * limit_activity
 * limit_capacity
 * limit_new_capacity
@@ -178,7 +183,8 @@ Supported tables:
 
 * limit_annual_capacity_factor
 * limit_seasonal_capacity_factor
-* limit_resource
+* limit_activity_cumulative
+* limit_new_capacity_cumulative
 * limit_activity
 * limit_capacity
 * limit_new_capacity

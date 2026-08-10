@@ -730,17 +730,39 @@ The :code:`limit_new_capacity_share` parameter constrains the new capacity of on
 technology or group as a share of another technology or group's new capacity.
 
 
-limit_resource
-~~~~~~~~~~~~~~
+limit_activity_cumulative
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
-:math:`{LS}_{r \in R, t \in T}`
+:math:`{LAC}_{r \in R, t \in T}`
 
-The :code:`limit_resource` parameter represents a bound on the cumulative
-amount of commodity that can be produced by a technology or group over the entire
-model time horizon.  The :code:`tech_or_group` column accepts a technology name or
-group name.  Note that this is *not* supported in myopic mode as the cumulative
-limit would need to decline as the horizon moves forward, which has not been added
-yet.
+The :code:`limit_activity_cumulative` parameter bounds activity from a technology
+or group over the complete model horizon.
+
+
+limit_emission_cumulative
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:math:`{LEC}_{r \in R, e \in C^e}`
+
+The :code:`limit_emission_cumulative` parameter bounds emissions in a region
+or group of regions over the complete model horizon.
+
+
+limit_new_capacity_cumulative
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:math:`{LNCC}_{r \in R, t \in T}`
+
+The :code:`limit_new_capacity_cumulative` parameter bounds new capacity in a region
+or group of regions over the complete model horizon.
+
+.. warning::
+
+   In myopic mode, the cumulative limits are **not** updated as the horizon advances, and so may
+   not behave as expected. This can be mitigated by using the evolving myopic feature to update
+   the cumulative limit after each myopic period, but the optimisation may still mistreat
+   cumulative limits extending beyond the current myopic horizon. The constraints are generally
+   not recommended for myopic mode with a short :code:`view_depth` parameter.
 
 
 limit_seasonal_capacity_factor
@@ -1369,7 +1391,11 @@ User-Specific Constraints
 
 .. autofunction:: temoa.components.limits.limit_new_capacity_share_constraint
 
-.. autofunction:: temoa.components.limits.limit_resource_constraint
+.. autofunction:: temoa.components.limits.limit_activity_cumulative_constraint
+
+.. autofunction:: temoa.components.limits.limit_new_capacity_cumulative_constraint
+
+.. autofunction:: temoa.components.limits.limit_emission_cumulative_constraint
 
 .. autofunction:: temoa.components.limits.limit_tech_input_split_constraint
 

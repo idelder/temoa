@@ -36,7 +36,9 @@ input_tables_with_units = [
     # 'limit_growth_new_capacity',
     # 'limit_growth_new_capacity_delta',
     'limit_new_capacity',
-    'limit_resource',
+    'limit_activity_cumulative',
+    'limit_new_capacity_cumulative',
+    'limit_emission_cumulative',
 ]
 
 output_tables_with_units = [

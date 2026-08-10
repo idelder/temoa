@@ -89,11 +89,13 @@ capacity, activity and emissions**.
    :header: "Parameter", "Database Table", "Model Element", "Notes"
    :widths: 15, 20, 25, 40
 
-   ":math:`\text{LC}_{r,p,t}`", ":code:`limit_capacity`", ":code:`limit_capacity`", "limit on capacity by period; :code:`tech_or_group` column accepts a technology name or group name"
-   ":math:`\text{LNC}_{r,t,v}`", ":code:`limit_new_capacity`", ":code:`limit_new_capacity`", "limit on new capacity deployment by vintage; :code:`tech_or_group` column accepts a technology name or group name"
-   ":math:`\text{LA}_{r,p,t}`", ":code:`limit_activity`", ":code:`limit_activity`", "limit on activity by region and period; :code:`tech_or_group` column accepts a technology name or group name"
+   ":math:`\text{LC}_{r,p,t}`", ":code:`limit_capacity`", ":code:`limit_capacity`", "limit on capacity by period"
+   ":math:`\text{LNC}_{r,t,v}`", ":code:`limit_new_capacity`", ":code:`limit_new_capacity`", "limit on new capacity deployment by vintage"
+   ":math:`\text{LA}_{r,p,t}`", ":code:`limit_activity`", ":code:`limit_activity`", "limit on activity by region and period"
    ":math:`\text{LE}_{r,p,e}`", ":code:`limit_emission`", ":code:`limit_emission`", "limit on emissions by region and period"
-   ":math:`\text{LS}_{r,t}`", ":code:`limit_resource`", ":code:`limit_resource`", "cumulative activity limit across time periods (not supported in myopic); :code:`tech_or_group` column accepts a technology name or group name"
+   ":math:`\text{LAC}_{r,t}`", ":code:`limit_activity_cumulative`", ":code:`limit_activity_cumulative`", "cumulative activity limit over whole planning horizon"
+   ":math:`\text{LNCC}_{r,t}`", ":code:`limit_new_capacity_cumulative`", ":code:`limit_new_capacity_cumulative`", "cumulative new-capacity limit over whole planning horizon"
+   ":math:`\text{LEC}_{r,e}`", ":code:`limit_emission_cumulative`", ":code:`limit_emission_cumulative`", "cumulative emissions limit over whole planning horizon"
 
 Parameters in the table below relate to the specification of **operational and
 split limits**.
@@ -102,7 +104,7 @@ split limits**.
    :header: "Parameter", "Database Table", "Model Element", "Notes"
    :widths: 15, 20, 25, 40
 
-   ":math:`\text{LACF}_{r,t,v,o}`", ":code:`limit_annual_capacity_factor`", ":code:`limit_annual_capacity_factor`", "annual capacity factor limits; indexed by vintage (not period); :code:`tech_or_group` column accepts a technology name or group name"
+   ":math:`\text{LACF}_{r,t,v,o}`", ":code:`limit_annual_capacity_factor`", ":code:`limit_annual_capacity_factor`", "annual capacity factor limits; indexed by vintage (not period)"
    ":math:`\text{LSCF}_{r,s,t}`", ":code:`limit_seasonal_capacity_factor`", ":code:`limit_seasonal_capacity_factor`", "seasonal capacity factor limits (no period index; applies to all periods)"
    ":math:`\text{LSF}_{r,s,d,t}`", ":code:`limit_storage_level_fraction`", ":code:`limit_storage_fraction`", "limit on storage level in any time slice"
    ":math:`\text{TIS}_{r,p,i,t}`", ":code:`limit_tech_input_split`", ":code:`limit_tech_input_split`", "technology input split constraints specifying input fuel ratio at time slice level"

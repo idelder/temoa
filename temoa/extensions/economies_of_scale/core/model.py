@@ -43,7 +43,7 @@ if TYPE_CHECKING:
 
         # Sets (indexing sets for variables and constraints)
         cost_invest_eos_rtn: Set
-        cost_invest_eos_segment_rptn: Set
+        cost_invest_eos_rptn: Set
         cost_invest_eos_period_rpt: Set
         cost_fixed_eos_rptn: Set
         cost_variable_eos_rptn: Set
@@ -94,7 +94,7 @@ def register_early_eos_components(model: TemoaModel) -> None:
     m.cost_invest_eos_segments = {}
     m.cost_invest_eos_reference_process = {}
 
-    m.cost_invest_eos_segment_rptn = Set(
+    m.cost_invest_eos_rptn = Set(
         dimen=4, initialize=cost_invest_eos.cost_invest_eos_cumulative_capacity_indices
     )
     m.cost_invest_eos_period_rpt = Set(
@@ -114,11 +114,9 @@ def register_model_components(model: TemoaModel) -> None:
     m.initialize_cost_invest_eos = BuildAction(rule=cost_invest_eos.initialize_cost_invest_eos)
 
     m.v_cost_invest_eos_cumulative_capacity = Var(
-        m.cost_invest_eos_segment_rptn, domain=NonNegativeReals, initialize=0
+        m.cost_invest_eos_rptn, domain=NonNegativeReals, initialize=0
     )
-    m.v_cost_invest_eos_segment_binary = Var(
-        m.cost_invest_eos_segment_rptn, domain=Binary, initialize=0
-    )
+    m.v_cost_invest_eos_segment_binary = Var(m.cost_invest_eos_rptn, domain=Binary, initialize=0)
 
     m.cost_invest_eos_segment_binary_constraint = Constraint(
         m.cost_invest_eos_period_rpt,
@@ -129,11 +127,11 @@ def register_model_components(model: TemoaModel) -> None:
         rule=cost_invest_eos.cost_invest_eos_cumulative_capacity_constraint,
     )
     m.cost_invest_eos_capacity_lower_bound_constraint = Constraint(
-        m.cost_invest_eos_segment_rptn,
+        m.cost_invest_eos_rptn,
         rule=cost_invest_eos.cost_invest_eos_capacity_lower_bound_constraint,
     )
     m.cost_invest_eos_capacity_upper_bound_constraint = Constraint(
-        m.cost_invest_eos_segment_rptn,
+        m.cost_invest_eos_rptn,
         rule=cost_invest_eos.cost_invest_eos_capacity_upper_bound_constraint,
     )
 

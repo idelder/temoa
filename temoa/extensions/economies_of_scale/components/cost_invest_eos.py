@@ -26,15 +26,15 @@ def cost_invest_eos_cumulative_capacity_indices(
     model: EOSModel,
 ) -> set[tuple[Region, Period, Technology, int]]:
     return {
-        (r, _p, t, n)
+        (r, p, t, n)
         for r, t, n in model.cost_invest_eos.sparse_keys()
-        for _p in model.time_optimize
-        for _r, _t in capacity.gather_group_built_processes(model, r, t, _p)
+        for p in model.time_optimize
+        if capacity.gather_group_built_processes(model, r, t, p)
     }
 
 
 def cost_invest_eos_period_cost_indices(model: EOSModel) -> set[tuple[Region, Period, Technology]]:
-    return {(r, p, t) for r, p, t, _ in model.cost_invest_eos_segment_rptn}
+    return {(r, p, t) for r, p, t, _ in model.cost_invest_eos_rptn}
 
 
 def append_cost_invest_eos_rtv(model: EOSModel) -> None:
@@ -46,12 +46,8 @@ def append_cost_invest_eos_rtv(model: EOSModel) -> None:
     discounting in the objective function.
     """
     for r, p, t in model.cost_invest_eos_period_rpt:
-        valid_rtv = {
-            (_r, _t, p) for _r, _t in capacity.gather_group_built_processes(model, r, t, p)
-        }
-        for rtv in valid_rtv:
-            if rtv not in model.cost_invest_rtv:
-                model.cost_invest_rtv.add(rtv)
+        for _r, _t in capacity.gather_group_built_processes(model, r, t, p):
+            model.cost_invest_rtv.add((_r, _t, p))
 
 
 def initialize_cost_invest_eos(model: EOSModel) -> None:

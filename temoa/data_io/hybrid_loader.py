@@ -58,14 +58,16 @@ logger = getLogger(__name__)
 BASE_REGIONAL_GROUP_TABLES = {
     'limit_annual_capacity_factor': 'region',
     'limit_emission': 'region',
+    'limit_emission_cumulative': 'region',
     'limit_seasonal_capacity_factor': 'region',
     'limit_capacity': 'region',
     'limit_activity': 'region',
+    'limit_activity_cumulative': 'region',
     'limit_new_capacity': 'region',
+    'limit_new_capacity_cumulative': 'region',
     'limit_activity_share': 'region',
     'limit_capacity_share': 'region',
     'limit_new_capacity_share': 'region',
-    'limit_resource': 'region',
     'planning_reserve_margin': 'region',
     'operating_reserve_margin': 'region',
 }

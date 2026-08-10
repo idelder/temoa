@@ -27,6 +27,8 @@ from temoa.components.utils import (
 )
 
 if TYPE_CHECKING:
+    from pyomo.core.expr.numeric_expr import NumericValue
+
     from temoa.core.model import TemoaModel
     from temoa.types import ExprLike, Period, Region, Technology, Vintage
     from temoa.types.core_types import Commodity, Season, TimeOfDay
@@ -160,15 +162,40 @@ def limit_annual_capacity_factor_indices(
 # ============================================================================
 
 
-def limit_resource_constraint(model: TemoaModel, r: Region, t: Technology, op: str) -> ExprLike:
-    r"""
+def activity_in_period(
+    model: TemoaModel, r: Region, p: Period, t: Technology
+) -> NumericValue | float:
+    """Return activity for a technology or group in one model period."""
+    activity = quicksum(
+        model.v_flow_out_annual[_r, p, S_i, _t, S_v, S_o]
+        for _r, _t in capacity.gather_group_active_processes(model, r, p, t)
+        if _t in model.tech_annual
+        for S_v in model.process_vintages.get((_r, p, _t), [])
+        for S_i in model.process_inputs[_r, p, _t, S_v]
+        for S_o in model.process_outputs_by_input[_r, p, _t, S_v, S_i]
+    )
+    activity += quicksum(
+        model.v_flow_out[_r, p, s, d, S_i, _t, S_v, S_o]
+        for _r, _t in capacity.gather_group_active_processes(model, r, p, t)
+        if _t not in model.tech_annual
+        for S_v in model.process_vintages.get((_r, p, _t), [])
+        for S_i in model.process_inputs[_r, p, _t, S_v]
+        for S_o in model.process_outputs_by_input[_r, p, _t, S_v, S_i]
+        for s in model.time_season
+        for d in model.time_of_day
+    )
+    return activity
 
-    The limit_resource constraint sets a limit on the available resource of a
-    given technology across all model time periods. Note that the indices for these
-    constraints are region and tech.
+
+def limit_activity_cumulative_constraint(
+    model: TemoaModel, r: Region, t: Technology, op: str
+) -> ExprLike:
+    r"""
+    The cumulative activity constraint limits activity for a technology or group
+    across all optimization periods and committed prior myopic periods.
 
     .. math::
-       :label: limit_resource
+       :label: limit_activity_cumulative
 
        \sum_{P,S,D,I,V,O} \textbf{FO}_{r, p, s, d, i, t \notin T^a, v, o}
 
@@ -176,35 +203,13 @@ def limit_resource_constraint(model: TemoaModel, r: Region, t: Technology, op: s
 
        \quad \le, \ge, \text{or} = \quad LS_{r, t}
 
-       \forall \{r, t\} \in \Theta_{\text{limit\_resource}}"""
-    # dev note:  this constraint is a misnomer.  It is actually a "global activity constraint on a
-    #            tech" regardless of whatever "resources" are consumed.
-    # dev note:  this would generally be applied to a "dummy import" technology to restrict
-    #            something like oil/mineral extraction across all model periods. Looks fine to me.
-
-    activity = quicksum(
-        model.v_flow_out_annual[_r, p, S_i, _t, S_v, S_o]
-        for p in model.time_optimize
-        for _r, _t in capacity.gather_group_active_processes(model, r, p, t)
-        if _t in model.tech_annual
-        for S_v in model.process_vintages[_r, p, _t]
-        for S_i in model.process_inputs[_r, p, _t, S_v]
-        for S_o in model.process_outputs_by_input[_r, p, _t, S_v, S_i]
+         \forall \{r, t\} \in \Theta_{\text{limit\_activity\_cumulative}}
+    """
+    activity = value(model.past_activity_result[r, t]) + quicksum(
+        activity_in_period(model, r, p, t) for p in model.time_optimize
     )
-    activity += quicksum(
-        model.v_flow_out[_r, p, s, d, S_i, _t, S_v, S_o]
-        for p in model.time_optimize
-        for _r, _t in capacity.gather_group_active_processes(model, r, p, t)
-        if _t not in model.tech_annual
-        for S_v in model.process_vintages[_r, p, _t]
-        for S_i in model.process_inputs[_r, p, _t, S_v]
-        for S_o in model.process_outputs_by_input[_r, p, _t, S_v, S_i]
-        for s in model.time_season
-        for d in model.time_of_day
-    )
-
-    resource_lim = value(model.limit_resource[r, t, op])
-    expr = operator_expression(activity, Operator(op), resource_lim)
+    activity_limit = value(model.limit_activity_cumulative[r, t, op])
+    expr = operator_expression(activity, Operator(op), activity_limit)
     return expr
 
 
@@ -235,43 +240,8 @@ def limit_activity_share_constraint(
         \qquad \forall \{r, p, g_1, g_2\} \in \Theta_{\text{limit\_activity\_share}}
     """
 
-    sub_activity = quicksum(
-        model.v_flow_out[S_r, p, s, d, S_i, S_t, S_v, S_o]
-        for S_r, S_t in capacity.gather_group_active_processes(model, r, p, g1)
-        if S_t not in model.tech_annual
-        for S_v in model.process_vintages.get((S_r, p, S_t), [])
-        for S_i in model.process_inputs[S_r, p, S_t, S_v]
-        for S_o in model.process_outputs_by_input[S_r, p, S_t, S_v, S_i]
-        for s in model.time_season
-        for d in model.time_of_day
-    )
-    sub_activity += quicksum(
-        model.v_flow_out_annual[S_r, p, S_i, S_t, S_v, S_o]
-        for S_r, S_t in capacity.gather_group_active_processes(model, r, p, g1)
-        if S_t in model.tech_annual
-        for S_v in model.process_vintages.get((S_r, p, S_t), [])
-        for S_i in model.process_inputs[S_r, p, S_t, S_v]
-        for S_o in model.process_outputs_by_input[S_r, p, S_t, S_v, S_i]
-    )
-
-    super_activity = quicksum(
-        model.v_flow_out[S_r, p, s, d, S_i, S_t, S_v, S_o]
-        for S_r, S_t in capacity.gather_group_active_processes(model, r, p, g2)
-        if S_t not in model.tech_annual
-        for S_v in model.process_vintages.get((S_r, p, S_t), [])
-        for S_i in model.process_inputs[S_r, p, S_t, S_v]
-        for S_o in model.process_outputs_by_input[S_r, p, S_t, S_v, S_i]
-        for s in model.time_season
-        for d in model.time_of_day
-    )
-    super_activity += quicksum(
-        model.v_flow_out_annual[S_r, p, S_i, S_t, S_v, S_o]
-        for S_r, S_t in capacity.gather_group_active_processes(model, r, p, g2)
-        if S_t in model.tech_annual
-        for S_v in model.process_vintages.get((S_r, p, S_t), [])
-        for S_i in model.process_inputs[S_r, p, S_t, S_v]
-        for S_o in model.process_outputs_by_input[S_r, p, S_t, S_v, S_i]
-    )
+    sub_activity = activity_in_period(model, r, p, g1)
+    super_activity = activity_in_period(model, r, p, g2)
 
     share_lim = value(model.limit_activity_share[r, p, g1, g2, op])
     expr = operator_expression(sub_activity, Operator(op), share_lim * super_activity)
@@ -685,6 +655,61 @@ def limit_tech_output_split_average_constraint(
     return expr
 
 
+def emissions_in_period(
+    model: TemoaModel, r: Region, p: Period, e: Commodity
+) -> NumericValue | float:
+    """Return all modeled emissions for a region or region group in one period."""
+    regions = geography.gather_group_regions(model, r)
+    process_emissions = quicksum(
+        model.v_flow_out[reg, p, season, tod, input_comm, tech, vintage, output_comm]
+        * value(model.emission_activity[reg, e, input_comm, tech, vintage, output_comm])
+        for reg in regions
+        for tmp_r, tmp_e, input_comm, tech, vintage, output_comm in (
+            model.emission_activity.sparse_keys()
+        )
+        if tmp_e == e and tmp_r == reg and tech not in model.tech_annual
+        if (reg, p, tech, vintage) in model.process_inputs
+        for season in model.time_season
+        for tod in model.time_of_day
+    )
+    process_emissions_annual = quicksum(
+        model.v_flow_out_annual[reg, p, input_comm, tech, vintage, output_comm]
+        * value(model.emission_activity[reg, e, input_comm, tech, vintage, output_comm])
+        for reg in regions
+        for tmp_r, tmp_e, input_comm, tech, vintage, output_comm in (
+            model.emission_activity.sparse_keys()
+        )
+        if tmp_e == e and tmp_r == reg and tech in model.tech_annual
+        if (reg, p, tech, vintage) in model.process_inputs
+    )
+    if 'unit_commitment' in model.enabled_extensions:
+        from temoa.extensions.unit_commitment.components import startup
+
+        process_emissions += quicksum(
+            startup.uc_startup_emissions_rpe(model, reg, p, e) for reg in regions
+        )
+    embodied_emissions = quicksum(
+        model.v_new_capacity[reg, tech, vintage]
+        * value(model.emission_embodied[reg, e, tech, vintage])
+        / value(model.period_length[vintage])
+        for reg in regions
+        for source_region, source_emission, tech, vintage in model.emission_embodied.sparse_keys()
+        if vintage == p and source_region == reg and source_emission == e
+    )
+    retirement_emissions = quicksum(
+        model.v_annual_retirement[reg, p, tech, vintage]
+        * value(model.emission_end_of_life[reg, e, tech, vintage])
+        for reg in regions
+        for source_region, source_emission, tech, vintage in (
+            model.emission_end_of_life.sparse_keys()
+        )
+        if (reg, tech, vintage) in model.retirement_periods
+        and p in model.retirement_periods[reg, tech, vintage]
+        if source_region == reg and source_emission == e
+    )
+    return process_emissions + process_emissions_annual + embodied_emissions + retirement_emissions
+
+
 def limit_emission_constraint(
     model: TemoaModel, r: Region, p: Period, e: Commodity, op: str
 ) -> ExprLike:
@@ -722,74 +747,7 @@ def limit_emission_constraint(
 
     """
     emission_limit = value(model.limit_emission[r, p, e, op])
-
-    # r can be an individual region (r='US'), or a combination of regions separated by a +
-    # (r='Mexico+US+Canada'), or 'global'.  Note that regions!=M.regions. We iterate over regions
-    # to find actual_emissions and actual_emissions_annual.
-
-    # if r == 'global', the constraint is system-wide
-
-    regions = geography.gather_group_regions(model, r)
-
-    # ================= Emissions and Flex and Curtailment =================
-    # Flex flows are deducted from v_flow_out, so it is NOT NEEDED to tax them again.
-    # (See commodity balance constr)
-    # Curtailment does not draw any inputs, so it seems logical that curtailed flows not be taxed
-    # either
-
-    process_emissions = quicksum(
-        model.v_flow_out[reg, p, S_s, S_d, S_i, S_t, S_v, S_o]
-        * value(model.emission_activity[reg, e, S_i, S_t, S_v, S_o])
-        for reg in regions
-        for tmp_r, tmp_e, S_i, S_t, S_v, S_o in model.emission_activity.sparse_keys()
-        if tmp_e == e and tmp_r == reg and S_t not in model.tech_annual
-        # EmissionsActivity not indexed by p, so make sure (r,p,t,v) combos valid
-        if (reg, p, S_t, S_v) in model.process_inputs
-        for S_s in model.time_season
-        for S_d in model.time_of_day
-    )
-
-    process_emissions_annual = quicksum(
-        model.v_flow_out_annual[reg, p, S_i, S_t, S_v, S_o]
-        * value(model.emission_activity[reg, e, S_i, S_t, S_v, S_o])
-        for reg in regions
-        for tmp_r, tmp_e, S_i, S_t, S_v, S_o in model.emission_activity.sparse_keys()
-        if tmp_e == e and tmp_r == reg and S_t in model.tech_annual
-        # EmissionsActivity not indexed by p, so make sure (r,p,t,v) combos valid
-        if (reg, p, S_t, S_v) in model.process_inputs
-    )
-
-    if 'unit_commitment' in model.enabled_extensions:
-        from temoa.extensions.unit_commitment.components import startup
-
-        process_emissions += quicksum(
-            startup.uc_startup_emissions_rpe(model, reg, p, e) for reg in regions
-        )
-
-    embodied_emissions = quicksum(
-        model.v_new_capacity[reg, t, v]
-        * value(model.emission_embodied[reg, e, t, v])
-        / value(model.period_length[v])
-        for reg in regions
-        for (S_r, S_e, t, v) in model.emission_embodied.sparse_keys()
-        if v == p and S_r == reg and S_e == e
-    )
-
-    retirement_emissions = quicksum(
-        model.v_annual_retirement[reg, p, t, v] * value(model.emission_end_of_life[reg, e, t, v])
-        for reg in regions
-        for (S_r, S_e, t, v) in model.emission_end_of_life.sparse_keys()
-        if (reg, t, v) in model.retirement_periods and p in model.retirement_periods[reg, t, v]
-        if S_r == reg and S_e == e
-    )
-
-    lhs = (
-        process_emissions + process_emissions_annual + embodied_emissions + retirement_emissions
-        # + emissions_flex # NO! flex is subtracted from flowout, already accounted by flowout
-        # + emissions_curtail # NO! curtailed flows are not actual flows, just an accounting tool
-        # + emissions_flex_annual # NO! flexannual is subtracted from flowoutannual, already
-        # accounted
-    )
+    lhs = emissions_in_period(model, r, p, e)
     expr = operator_expression(lhs, Operator(op), emission_limit)
 
     # in the case that there is nothing to sum, skip
@@ -799,6 +757,20 @@ def limit_emission_constraint(
         sys.stderr.write(msg % (e, emission_limit))
         return Constraint.Skip
 
+    return expr
+
+
+def limit_emission_cumulative_constraint(
+    model: TemoaModel, r: Region, e: Commodity, op: str
+) -> ExprLike:
+    """Limit emissions across all optimize periods and committed myopic history."""
+    emissions = value(model.past_emission_result[r, e]) + quicksum(
+        emissions_in_period(model, r, p, e) for p in model.time_optimize
+    )
+    emission_limit = value(model.limit_emission_cumulative[r, e, op])
+    expr = operator_expression(emissions, Operator(op), emission_limit)
+    if isinstance(expr, bool):
+        return Constraint.Skip
     return expr
 
 
@@ -828,24 +800,7 @@ def limit_activity_constraint(
        \quad \le, \ge, \text{or} = \quad LA_{r, p, t}
     """
 
-    activity = quicksum(
-        model.v_flow_out[_r, p, s, d, S_i, _t, S_v, S_o]
-        for _r, _t in capacity.gather_group_active_processes(model, r, p, t)
-        if _t not in model.tech_annual
-        for S_v in model.process_vintages.get((_r, p, _t), [])
-        for S_i in model.process_inputs[_r, p, _t, S_v]
-        for S_o in model.process_outputs_by_input[_r, p, _t, S_v, S_i]
-        for s in model.time_season
-        for d in model.time_of_day
-    )
-    activity += quicksum(
-        model.v_flow_out_annual[_r, p, S_i, _t, S_v, S_o]
-        for _r, _t in capacity.gather_group_active_processes(model, r, p, t)
-        if _t in model.tech_annual
-        for S_v in model.process_vintages.get((_r, p, _t), [])
-        for S_i in model.process_inputs[_r, p, _t, S_v]
-        for S_o in model.process_outputs_by_input[_r, p, _t, S_v, S_i]
-    )
+    activity = activity_in_period(model, r, p, t)
 
     act_lim = value(model.limit_activity[r, p, t, op])
     expr = operator_expression(activity, Operator(op), act_lim)
@@ -873,6 +828,22 @@ def limit_new_capacity_constraint(
         for _r, _t in capacity.gather_group_built_processes(model, r, t, v)
     )
     expr = operator_expression(new_cap, Operator(op), cap_lim)
+    if isinstance(expr, bool):
+        return Constraint.Skip
+    return expr
+
+
+def limit_new_capacity_cumulative_constraint(
+    model: TemoaModel, r: Region, t: Technology, op: str
+) -> ExprLike:
+    """Limit new capacity across all optimize vintages and committed myopic history."""
+    new_capacity = value(model.past_new_capacity_result[r, t]) + quicksum(
+        model.v_new_capacity[_r, _t, v]
+        for v in model.vintage_optimize
+        for _r, _t in capacity.gather_group_built_processes(model, r, t, v)
+    )
+    capacity_limit = value(model.limit_new_capacity_cumulative[r, t, op])
+    expr = operator_expression(new_capacity, Operator(op), capacity_limit)
     if isinstance(expr, bool):
         return Constraint.Skip
     return expr

@@ -349,7 +349,9 @@ v4.0 Schema Coverage
    "limit_capacity", "[V]", "[V]", "", "[V]", ""
    "limit_emission", "[V]", "[V]", "", "", ""
    "limit_new_capacity", "[V]", "[V]", "", "[V]", ""
-   "limit_resource", "[V]", "[V]", "", "", ""
+   "limit_activity_cumulative", "[V]", "[V]", "", "[V]", ""
+   "limit_new_capacity_cumulative", "[V]", "[V]", "", "[V]", ""
+   "limit_emission_cumulative", "[V]", "[V]", "", "", ""
 
 **Check Legend**:
 - Check 2: Standard validation (format, characters, registry)

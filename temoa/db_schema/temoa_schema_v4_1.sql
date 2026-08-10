@@ -505,13 +505,24 @@ CREATE TABLE IF NOT EXISTS limit_new_capacity_share
     notes          TEXT,
     PRIMARY KEY (region, sub_group, super_group, vintage, operator)
 );
-CREATE TABLE IF NOT EXISTS limit_resource
+CREATE TABLE IF NOT EXISTS limit_activity_cumulative
 (
     region  TEXT,
     tech_or_group   TEXT,
     operator	TEXT  NOT NULL DEFAULT "le"
     	REFERENCES operator (operator),
-    cum_act REAL,
+    activity REAL,
+    units   TEXT,
+    notes   TEXT,
+    PRIMARY KEY (region, tech_or_group, operator)
+);
+CREATE TABLE IF NOT EXISTS limit_new_capacity_cumulative
+(
+    region  TEXT,
+    tech_or_group   TEXT,
+    operator	TEXT  NOT NULL DEFAULT "le"
+    	REFERENCES operator (operator),
+    new_cap REAL,
     units   TEXT,
     notes   TEXT,
     PRIMARY KEY (region, tech_or_group, operator)
@@ -601,6 +612,18 @@ CREATE TABLE IF NOT EXISTS limit_emission
     units     TEXT,
     notes     TEXT,
     PRIMARY KEY (region, period, emis_comm, operator)
+);
+CREATE TABLE IF NOT EXISTS limit_emission_cumulative
+(
+    region    TEXT,
+    emis_comm TEXT
+        REFERENCES commodity (name),
+    operator	TEXT  NOT NULL DEFAULT "le"
+    	REFERENCES operator (operator),
+    value     REAL,
+    units     TEXT,
+    notes     TEXT,
+    PRIMARY KEY (region, emis_comm, operator)
 );
 CREATE TABLE IF NOT EXISTS linked_tech
 (
@@ -912,10 +935,10 @@ CREATE TABLE IF NOT EXISTS technology
 CREATE TABLE IF NOT EXISTS output_cost
 (
     scenario TEXT,
-    region   TEXT,
+    region   TEXT REFERENCES region (region),
     sector   TEXT REFERENCES sector_label (sector),
     period   INTEGER REFERENCES time_period (period),
-    tech     TEXT,
+    tech     TEXT REFERENCES technology (tech),
     vintage  INTEGER REFERENCES time_period (period),
     d_invest REAL,
     d_fixed  REAL,
@@ -926,10 +949,8 @@ CREATE TABLE IF NOT EXISTS output_cost
     var      REAL,
     emiss    REAL,
     units    TEXT,
-    PRIMARY KEY (scenario, region, period, tech, vintage),
-    FOREIGN KEY (vintage) REFERENCES time_period (period)
+    PRIMARY KEY (scenario, region, period, tech, vintage)
 );
-
 CREATE TABLE IF NOT EXISTS time_season
 (
     sequence INTEGER UNIQUE,

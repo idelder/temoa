@@ -172,6 +172,26 @@ def _migrate_rps_requirement(
     return len(migrated)
 
 
+def _migrate_limit_resource(con_old: sqlite3.Connection, con_new: sqlite3.Connection) -> int:
+    """Migrate the legacy cumulative activity table to its v4.1 name."""
+    try:
+        rows = con_old.execute(
+            'SELECT region, tech_or_group, operator, cum_act, units, notes FROM limit_resource'
+        ).fetchall()
+    except sqlite3.OperationalError:
+        return 0
+    if not rows:
+        return 0
+    con_new.executemany(
+        'INSERT OR REPLACE INTO limit_activity_cumulative '
+        '(region, tech_or_group, operator, activity, units, notes) '
+        'VALUES (?, ?, ?, ?, ?, ?)',
+        rows,
+    )
+    print(f'Migrated {len(rows)} rows: limit_resource -> limit_activity_cumulative')
+    return len(rows)
+
+
 def _migrate_common_tables(con_old: sqlite3.Connection, con_new: sqlite3.Connection) -> int:
     """Copy all tables that exist in both schemas, skipping custom-handled ones."""
     skip = {
@@ -228,6 +248,7 @@ def execute_v4_to_v4_1_migration(con_old: sqlite3.Connection, con_new: sqlite3.C
     reserve_group_built = len(reserve_techs) > 0
     total += _migrate_planning_reserve_margin(con_old, con_new, reserve_group_built)
     total += _migrate_rps_requirement(con_old, con_new, reserve_group_built)
+    total += _migrate_limit_resource(con_old, con_new)
 
     con_new.execute("INSERT OR REPLACE INTO metadata VALUES ('DB_MAJOR', 4, 'DB major version')")
     con_new.execute("INSERT OR REPLACE INTO metadata VALUES ('DB_MINOR', 1, 'DB minor version')")

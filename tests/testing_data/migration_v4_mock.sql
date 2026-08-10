@@ -54,3 +54,6 @@ INSERT INTO rps_requirement (region, period, tech_group, requirement)
     VALUES ('R1', 2030, 'renewables', 0.30);
 INSERT INTO rps_requirement (region, period, tech_group, requirement)
     VALUES ('R1', 2040, 'renewables', 0.40);
+
+INSERT INTO limit_resource (region, tech_or_group, operator, cum_act, units, notes)
+    VALUES ('R1', 'GasTurbine', 'le', 25.0, 'PJ', 'legacy cumulative activity');

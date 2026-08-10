@@ -298,7 +298,7 @@ limit_emission {
    TEXT region PK
    TEXT notes
    TEXT units
-   REAL value
+   REAL emission
 }
 limit_new_capacity {
  TEXT operator PK
@@ -318,11 +318,27 @@ limit_new_capacity_share {
    TEXT notes
    REAL share
 }
-limit_resource {
+limit_activity_cumulative {
  TEXT operator PK
    TEXT region PK
    TEXT tech_or_group PK
-   REAL cum_act
+   REAL activity
+   TEXT notes
+   TEXT units
+}
+limit_new_capacity_cumulative {
+ TEXT operator PK
+   TEXT region PK
+   TEXT tech_or_group PK
+   REAL new_cap
+   TEXT notes
+   TEXT units
+}
+limit_emission_cumulative {
+ TEXT emis_comm PK
+   TEXT operator PK
+   TEXT region PK
+   REAL emission
    TEXT notes
    TEXT units
 }
@@ -703,7 +719,9 @@ time_period one or zero--0+ limit_new_capacity : has
 operator 1--0+ limit_new_capacity : has
 operator 1--0+ limit_new_capacity_share : has
 time_period one or zero--0+ limit_new_capacity_share : has
-operator 1--0+ limit_resource : has
+operator 1--0+ limit_activity_cumulative : has
+operator 1--0+ limit_new_capacity_cumulative : has
+operator 1--0+ limit_emission_cumulative : has
 region one or zero--0+ limit_seasonal_capacity_factor : has
 time_period one or zero--0+ limit_seasonal_capacity_factor : has
 season_label one or zero--0+ limit_seasonal_capacity_factor : has

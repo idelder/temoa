@@ -63,6 +63,15 @@ def _verify_migrated_db(conn: sqlite3.Connection) -> None:
     assert 'capacity_credit' not in tables
     assert 'reserve_capacity_derate' not in tables
     assert 'rps_requirement' not in tables
+    assert 'limit_resource' not in tables
+
+    cumulative_activity = conn.execute(
+        'SELECT region, tech_or_group, operator, activity, units, notes '
+        'FROM limit_activity_cumulative'
+    ).fetchall()
+    assert cumulative_activity == [
+        ('R1', 'GasTurbine', 'le', pytest.approx(25.0), 'PJ', 'legacy cumulative activity')
+    ]
 
     # planning_reserve_margin: migrated using reserve tech group as tech_or_group
     from temoa.utilities.migrate_v4_to_v4_1 import RESERVE_GROUP_NAME
