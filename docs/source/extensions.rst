@@ -84,9 +84,6 @@ The relevant code lives in :mod:`temoa.extensions.framework`,
    * - ``schema_sql_path``
      - Path to a ``.sql`` file applied (with consent) when the extension is
        enabled but its tables are missing.
-   * - ``fail_if_tables_populated_when_disabled``
-     - When ``True``, loading fails if the extension is disabled but its owned
-       tables contain data, preventing silently-ignored inputs.
 
 Recommended package layout
 --------------------------

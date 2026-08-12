@@ -87,9 +87,7 @@ sets.
 An associated implementation of this constraint based on the definition above
 is:
 
-.. topic:: temoa/components/
-
-   ...
+.. topic:: in ``temoa/components/commodities.py``
 
    .. code-block:: python
       :linenos:
@@ -108,7 +106,6 @@ is:
 
          expr = supply_annual == value(model.demand[r, p, dem])
          return expr
-   ...
 
 The Python boiler-plate code to create the rule is on line 1.  It begins with
 :code:`def`, followed by the rule name (matching the :code:`rule=...` argument

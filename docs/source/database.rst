@@ -242,6 +242,7 @@ Both of the checks below can be run to QA data by using the ``temoa validate``
 command (which runs the model in ``BUILD_ONLY`` mode) and inspecting the log file.
 During validation runs, no solve is attempted on the model.
 
+--------------
 Price Checking
 --------------
 The "price checker" reviews cost data in the 3 cost tables and considers technology lifetime.  It
@@ -272,6 +273,7 @@ a particular region could easily be overlooked.  Price checks performed/reported
 6. **Uncapacitated Tech Costs**:  Any technology flagged as `uncapacitated` will trigger warnings here
    if it has any fixed/invest costs.
 
+--------------
 Source Tracing
 --------------
 
@@ -301,6 +303,7 @@ Users can configure the cycle detection behavior using the following settings:
 Note that the myopic mode *requires* the use of Source Tracing to ensure accuracy as some orphans
 may be produced by endogenous decisions in myopic runs.
 
+-------------------------
 SQLite Performance Tuning
 -------------------------
 
