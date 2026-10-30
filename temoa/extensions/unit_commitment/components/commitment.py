@@ -141,6 +141,19 @@ def uc_constraint_indices(
     }
 
 
+def uc_constraint_init_indices(
+    model: UnitCommitmentModel,
+) -> set[tuple[Region, Period, Season, Technology, Vintage]]:
+    """All (r, p, s, t, v) indices for unit commitment constraints."""
+    return {
+        (r, p, s, t, v)
+        for r, t in model.uc_unit_capacity.sparse_keys()
+        for p in model.time_optimize
+        for v in model.process_vintages.get((r, p, t), [])
+        for s in model.time_season
+    }
+
+
 def ramp_up_constraint_indices(
     model: UnitCommitmentModel,
 ) -> set[tuple[Region, Period, Season, TimeOfDay, Technology, Vintage]]:
@@ -335,11 +348,52 @@ def uc_transition_constraint(
         \textbf{UCN}_{r,p,s_{next},d_{next},t,v} - \textbf{UCN}_{r,p,s,d,t,v}
         = \textbf{UCST}_{r,p,s,d,t,v} - \textbf{UCSP}_{r,p,s,d,t,v}
     """
+    if d == model.time_of_day.first():
+        return Constraint.Skip  # performance optimisation, see uc_transition_init_constraint
     s_next, d_next = model.time_next[s, d]
     return (
         model.v_uc_online[r, p, s_next, d_next, t, v] - model.v_uc_online[r, p, s, d, t, v]
         == model.v_uc_started[r, p, s, d, t, v] - model.v_uc_stopped[r, p, s, d, t, v]
     )
+
+
+def uc_transition_init_constraint(
+    model: UnitCommitmentModel,
+    r: Region,
+    p: Period,
+    s: Season,
+    t: Technology,
+    v: Vintage,
+) -> ExprLike:
+    r"""
+    Performance optimisation:
+    A copy of the uc_transition_constraint that only applies to the first time of day
+    of each season. Uses a dummy duplicate variable in place of v_uc_online to break
+    the cyclic chains on v_uc_online references. For unknown reasons, this can help
+    considerably with presolve performance despite being logically identical.
+    """
+    d0 = model.time_of_day.first()
+    s_next, d_next = model.time_next[s, d0]
+    return (
+        model.v_uc_online[r, p, s_next, d_next, t, v] - model.v_uc_online_init[r, p, s, t, v]
+        == model.v_uc_started[r, p, s, d0, t, v] - model.v_uc_stopped[r, p, s, d0, t, v]
+    )
+
+
+def uc_online_init_constraint(
+    model: UnitCommitmentModel,
+    r: Region,
+    p: Period,
+    s: Season,
+    t: Technology,
+    v: Vintage,
+) -> ExprLike:
+    r"""
+    In service to uc_transition_constraint_init above, this constraint simply
+    ensures that v_uc_online_init = v_uc_online[tod0].
+    """
+    d0 = model.time_of_day.first()
+    return model.v_uc_online_init[r, p, s, t, v] == model.v_uc_online[r, p, s, d0, t, v]
 
 
 def uc_min_output_constraint(

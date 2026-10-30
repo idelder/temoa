@@ -42,6 +42,7 @@ if TYPE_CHECKING:
 
         # --- Index sets ---
         uc_indices_rpsdtv: Set  # all (r,p,s,d,t,v) subject to UC
+        uc_indices_rpstv: Set  # all (r,p,s,t,v) subject to UC
         default_ramp_up_constraint_rpsdtv: Set
         default_ramp_down_constraint_rpsdtv: Set
         uc_ramp_up_constraint_rpsdtv: Set
@@ -53,6 +54,7 @@ if TYPE_CHECKING:
         uc_append_startup_costs: BuildAction
 
         # --- Decision variables ---
+        v_uc_online_init: Var  # used purely for performance optimisation
         v_uc_online: Var
         v_uc_started: Var
         v_uc_stopped: Var
@@ -63,6 +65,8 @@ if TYPE_CHECKING:
         uc_started_upper_tightening_constraint: Constraint
         uc_stopped_upper_tightening_constraint: Constraint
         uc_transition_constraint: Constraint
+        uc_transition_init_constraint: Constraint
+        uc_online_init_constraint: Constraint
         uc_min_up_time_constraint: Constraint
         uc_min_down_time_constraint: Constraint
         uc_ramp_up_constraint: Constraint
@@ -103,11 +107,13 @@ def register_early_components(model: TemoaModel) -> None:
 
     # Index sets
     m.uc_indices_rpsdtv = Set(dimen=6, initialize=commitment.uc_constraint_indices)
+    m.uc_indices_rpstv = Set(dimen=5, initialize=commitment.uc_constraint_init_indices)
 
     # BuildAction to initialise
     m.uc_initialise = BuildAction(rule=commitment.initialize_unit_commitment)
 
     # Decision variables
+    m.v_uc_online_init = Var(m.uc_indices_rpstv, domain=NonNegativeReals, initialize=0)
     m.v_uc_online = Var(m.uc_indices_rpsdtv, domain=NonNegativeReals, initialize=0)
     m.v_uc_started = Var(m.uc_indices_rpsdtv, domain=NonNegativeReals, initialize=0)
     m.v_uc_stopped = Var(m.uc_indices_rpsdtv, domain=NonNegativeReals, initialize=0)
@@ -154,6 +160,12 @@ def register_model_components(model: TemoaModel) -> None:
     )
     m.uc_transition_constraint = Constraint(
         m.uc_indices_rpsdtv, rule=commitment.uc_transition_constraint
+    )
+    m.uc_transition_init_constraint = Constraint(
+        m.uc_indices_rpstv, rule=commitment.uc_transition_init_constraint
+    )
+    m.uc_online_init_constraint = Constraint(
+        m.uc_indices_rpstv, rule=commitment.uc_online_init_constraint
     )
     m.uc_min_output_constraint = Constraint(
         m.uc_indices_rpsdtv, rule=commitment.uc_min_output_constraint
