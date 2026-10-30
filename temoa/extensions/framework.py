@@ -55,6 +55,7 @@ def normalize_extension_ids(extension_ids: Sequence[str | object] | None) -> tup
 
 def get_known_extension_specs() -> dict[str, ExtensionSpec]:
     """Return all extension specs known to this installation."""
+    from temoa.extensions.carbon_markets.extension import CARBON_MARKETS_EXTENSION
     from temoa.extensions.discrete_capacity.extension import DISCRETE_CAPACITY_EXTENSION
     from temoa.extensions.economies_of_scale.extension import EOS_EXTENSION
     from temoa.extensions.growth_rates.extension import GROWTH_RATES_EXTENSION
@@ -65,6 +66,7 @@ def get_known_extension_specs() -> dict[str, ExtensionSpec]:
         DISCRETE_CAPACITY_EXTENSION,
         EOS_EXTENSION,
         UNIT_COMMITMENT_EXTENSION,
+        CARBON_MARKETS_EXTENSION,
     ]
     return {spec.extension_id: spec for spec in specs}
 

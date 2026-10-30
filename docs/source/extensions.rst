@@ -247,3 +247,4 @@ as new extensions are added.
    extensions/discrete_capacity
    extensions/eos
    extensions/unit_commitment
+   extensions/carbon_markets
